@@ -113,7 +113,7 @@ public class MyRobot extends BCAbstractRobot {
 	public int findDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
 		int dx = this.me.x - x;
 		int dy = this.me.y - y;
-		return Math.max(dx, dy);
+		return Math.abs(dx) > Math.abs(dy) ? dx : dy;
 	}
 	
 	public Action pilgrimRunAway() {
@@ -128,7 +128,8 @@ public class MyRobot extends BCAbstractRobot {
 	public Action moveToOptimalAttack() { //get distance from closest enemy, and move such that the enemy is as far as possible but still in attack range
 		List<Robot> nearbyEnemies = this.senseNearbyEnemies();
 		Robot closestEnemy = findClosestRobot(nearbyEnemies);
-		return this.move(closestEnemy.x - getMaxAttackRangeRadius(), y); //replace with our move/pathing method later
+		int move = findDistance(closestEnemy.x, closestEnemy.y) - getMaxAttackRangeRadius();
+		return this.move(, ); //replace with our move/pathing method later
 	}
 	
 //	public void alertKilledEnemy() { //not sure how to return killed coordinates because of this communication system
