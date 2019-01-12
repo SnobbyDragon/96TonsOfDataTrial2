@@ -118,21 +118,34 @@ public class MyRobot extends BCAbstractRobot {
 	
 	public Action pilgrimRunAway() {
 		List<Robot> nearbyEnemies = this.senseNearbyEnemies();
+		Robot closestEnemy = findClosestRobot(nearbyEnemies);
 		int x = 0, y = 0;
-		x -= this.me.x - nearbyEnemies.get(0).x;
-		y -= this.me.y - nearbyEnemies.get(0).y;
+		x -= this.me.x - closestEnemy.x;
+		y -= this.me.y - closestEnemy.y;
 		return this.move(x, y); //replace with our move/pathing method later
 	}
 	
 	public Action moveToOptimalAttack() { //get distance from closest enemy, and move such that the enemy is as far as possible but still in attack range
 		List<Robot> nearbyEnemies = this.senseNearbyEnemies();
-		int x = 0, y = 0;
-		return this.move(x, y); //replace with our move/pathing method later
+		Robot closestEnemy = findClosestRobot(nearbyEnemies);
+		return this.move(closestEnemy.x - getMaxAttackRangeRadius(), y); //replace with our move/pathing method later
 	}
 	
-	public void alertKilledEnemy() { //not sure how to return killed coordinates because of this communication system
-		int value, radius;
-		this.signal(value, radius);
+//	public void alertKilledEnemy() { //not sure how to return killed coordinates because of this communication system
+//		int value, radius;
+//		this.signal(value, radius);
+//	}
+	
+	public int getMovementRangeRadius() {
+		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].SPEED);
+	}
+	
+	public int getMinAttackRangeRadius() {
+		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[0]);
+	}
+	
+	public int getMaxAttackRangeRadius() {
+		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[1]);
 	}
 	
 }
