@@ -6,22 +6,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MyRobot extends BCAbstractRobot {
-	public int turn = 0;
-
+	public int turn;
+	public int origin; //coordinates of castle or church
+	
 	public Action turn() {
 		turn++;
-
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
 				log("Building a pilgrim.");
 				return buildUnit(SPECS.PILGRIM,1,0);
 			}
 		}
-		
 		if (me.unit == SPECS.CHURCH) {
 			
 		}
-
+		if (turn == 1) { //is a robot, not a structure
+			//sets coordinates of origin
+		}
 		if (me.unit == SPECS.PILGRIM) {
 			if (turn == 1) {
 				log("I am a pilgrim.");
@@ -31,7 +32,6 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		return null;
-
 	}
 	
 	public int[] checkAdjacentPassable() {
@@ -90,9 +90,15 @@ public class MyRobot extends BCAbstractRobot {
 		return buildUnit(SPECS.CRUSADER, spot[0], spot[1]);
 	}
 	
+	public List<Robot> senseNearbyAllies() {
+		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
+		List<Robot> allies = nearbyRobots.stream().filter(robot -> robot.team == this.me.team).collect(Collectors.toList());
+		return allies;
+	}
+	
 	public List<Robot> senseNearbyEnemies() {
 		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
-		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team == this.me.team).collect(Collectors.toList());
+		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team != this.me.team).collect(Collectors.toList());
 		return enemies;
 	}
 	
@@ -113,7 +119,7 @@ public class MyRobot extends BCAbstractRobot {
 	public int findAbsoluteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
 		int dx = Math.abs(this.me.x - x);
 		int dy = Math.abs(this.me.y - y);
-		return Math.max(dx, dy)
+		return dx + dy;
 	}
 	
 	public Action pilgrimRunAway() {
@@ -131,11 +137,6 @@ public class MyRobot extends BCAbstractRobot {
 		int move = findAbsoluteDistance(closestEnemy.x, closestEnemy.y) - getMaxAttackRangeRadius();
 		return this.move(move/2, move/2); //replace with our move/pathing method later
 	}
-	
-//	public void alertKilledEnemy() { //not sure how to return killed coordinates because of this communication system
-//		int value, radius;
-//		this.signal(value, radius);
-//	}
 	
 	public int getMovementRangeRadius() {
 		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].SPEED);
