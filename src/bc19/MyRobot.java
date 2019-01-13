@@ -81,7 +81,7 @@ public class MyRobot extends BCAbstractRobot {
 		String optimalDirection = "";
 		if (xDistance >= 0 && yDistance >= 0) {
 			quadrant = 1;
-			radianAngle = Math.tan(absoluteYDistance / absoluteXDistance);
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
 				optimalDirection = "EAST";
 			} else if (radianAngle >= piSevenEight && radianAngle <= piHalf) {
@@ -91,7 +91,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		} else if (xDistance <= 0 && yDistance >= 0) {
 			quadrant = 2;
-			radianAngle = Math.tan(absoluteYDistance / absoluteXDistance);
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
 				optimalDirection = "WEST";
 			} else if (radianAngle >= piSevenEight && radianAngle <= piHalf) {
@@ -101,7 +101,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		} else if (xDistance <= 0 && yDistance <= 0) {
 			quadrant = 3;
-			radianAngle = Math.tan(absoluteYDistance / absoluteXDistance);
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
 				optimalDirection = "WEST";
 			} else if (radianAngle >= piSevenEight && radianAngle <= piHalf) {
@@ -111,7 +111,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		} else if (xDistance >= 0 && yDistance <= 0) {
 			quadrant = 4;
-			radianAngle = Math.tan(absoluteYDistance / absoluteXDistance);
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
 				optimalDirection = "EAST";
 			} else if (radianAngle >= piSevenEight && radianAngle <= piHalf) {
