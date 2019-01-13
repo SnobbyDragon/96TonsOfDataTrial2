@@ -2,6 +2,9 @@ package bc19;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,34 +99,34 @@ public class MyRobot extends BCAbstractRobot {
 		return allies;
 	}
 	
-	public List<Robot> senseNearbyEnemies() {
-		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
-		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team != this.me.team).collect(Collectors.toList());
-		return enemies;
-	}
+//	public List<Robot> senseNearbyEnemies() {
+//		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
+//		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team != this.me.team).collect(Collectors.toList());
+//		return enemies;
+//	}
 	
-	public Robot findClosestRobot(List<Robot> robots) {
-		int leastDistance = 65;
-		int distance;
-		int index = 0;
-		for (int i = 0; i < robots.size(); i++) {
-			distance = findAbsoluteDistance(robots.get(i).x, robots.get(i).y);
-			if (leastDistance > distance) {
-				index = i;
-				leastDistance = distance;
-			}
-		}
-		return robots.get(index);
-	}
+//	public Robot findClosestRobot(List<Robot> robots) {
+//		int leastDistance = 65;
+//		int distance;
+//		int index = 0;
+//		for (int i = 0; i < robots.size(); i++) {
+//			distance = findDiscreteDistance(robots.get(i).x, robots.get(i).y);
+//			if (leastDistance > distance) {
+//				index = i;
+//				leastDistance = distance;
+//			}
+//		}
+//		return robots.get(index);
+//	}
 	
-	public int findAbsoluteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
+	public int findDiscreteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
 		int dx = Math.abs(this.me.x - x);
 		int dy = Math.abs(this.me.y - y);
 		return dx + dy;
 	}
 	
 	public Action pilgrimRunAway() {
-		List<Robot> nearbyEnemies = this.senseNearbyEnemies();
+		HashSet<Robot> nearbyEnemies = this.findBadGuys();
 		Robot closestEnemy = findClosestRobot(nearbyEnemies);
 		int x = 0, y = 0;
 		x -= this.me.x - closestEnemy.x;
@@ -131,11 +134,64 @@ public class MyRobot extends BCAbstractRobot {
 		return this.move(x, y); //replace with our move/pathing method later
 	}
 	
-	public Action moveToOptimalAttack() { //get distance from closest enemy, and move such that the enemy is as far as possible but still in attack range
-		List<Robot> nearbyEnemies = this.senseNearbyEnemies();
-		Robot closestEnemy = findClosestRobot(nearbyEnemies);
-		int move = findAbsoluteDistance(closestEnemy.x, closestEnemy.y) - getMaxAttackRangeRadius();
-		return this.move(move/2, move/2); //replace with our move/pathing method later
+	public HashSet<Robot> findBadGuys() {
+		HashSet<Robot> theBadGuys = new HashSet<Robot>();
+		Robot[] visibleBots = getVisibleRobots();
+		for (int i = 0; i < visibleBots.length; i++) {
+			if (me.team != visibleBots[i].team) {
+				theBadGuys.add(visibleBots[i]);
+			}
+		}
+		return theBadGuys;
+	}
+
+	public Robot findPrimaryEnemyHealth(HashSet<Robot> potentialEnemies) {
+		int lowestHealth = Integer.MAX_VALUE;
+		Robot weakestBot = null;
+		Iterator<Robot> iter = potentialEnemies.iterator();
+		while (iter.hasNext()) {
+			Robot badGuy = iter.next();
+			if (canAttack(findDistance(me, badGuy))) {
+				if (lowestHealth > badGuy.health) {
+					lowestHealth = badGuy.health;
+					weakestBot = badGuy;
+				}
+			}
+		}
+		return weakestBot;
+	}
+
+	public Robot findPrimaryEnemyDistance(HashSet<Robot> potentialEnemies) {
+		double closestDistance = Double.MAX_VALUE;
+		Robot closestBot = null;
+		Iterator<Robot> iter = potentialEnemies.iterator();
+		while (iter.hasNext()) {
+			Robot badGuy = iter.next();
+			double distance = findDistance(me, badGuy);
+			if (canAttack(distance)) {
+				if (closestDistance > distance) {
+					closestDistance = distance;
+					closestBot = badGuy;
+				}
+			}
+		}
+		return closestBot;
+	}
+	
+	public LinkedList<Robot> findPrimaryEnemyType(HashSet<Robot> potentialEnemies) {
+		LinkedList<Robot> primaryEnemies = new LinkedList<Robot>();
+		Iterator<Robot> iter = potentialEnemies.iterator();
+		Robot badGuy;
+		while (iter.hasNext()) {
+			badGuy = iter.next();
+			if (badGuy.unit == SPECS.CRUSADER) {
+				primaryEnemies.addFirst(badGuy);
+			}
+			if (badGuy.unit == SPECS.PREACHER) {
+				primaryEnemies.add
+			}
+		}
+		return 
 	}
 	
 	public int getMovementRangeRadius() {
