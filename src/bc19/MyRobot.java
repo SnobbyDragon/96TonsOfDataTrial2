@@ -14,6 +14,8 @@ public class MyRobot extends BCAbstractRobot {
 	boolean[][] fuelMap=getFuelMap();
 	ArrayList<String> directions;
 	ArrayList<Integer> previousLocations=new ArrayList<Integer>();
+	boolean haveCastle=false;
+	int[] castleLocation=new int[2];
 	public Action turn() {
 		turn++;
 		setDirectionsArrayList();
@@ -26,13 +28,31 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (me.unit == SPECS.PILGRIM) {
 			if(canMineFuel(me)||canMineKarbonite(me)) {
-				log("I mined fuel or karbonite");
 				return mine();
 			}
-			if (turn == 1) {
-				log("I am a pilgrim.");
-
+			if (!haveCastle) {
+				if(locateNearbyCastle(me)) {
+					haveCastle=true;
+				}
 				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
+			}
+			if(canGiveStuff(me)) {
+				int xCastle=castleLocation[0]-me.x;
+				int yCastle=castleLocation[1]-me.y;
+				return give(xCastle,yCastle,me.karbonite,me.fuel);
+			}
+			if(me.karbonite==20||me.fuel==100) {
+				return pathFind(me,castleLocation);
+			} else {
+				int[] closestKarbonite=searchForKarboniteLocation();
+				int[] closestFuel=searchForFuelLocation();
+				if(findDistance(me,closestKarbonite[0],closestKarbonite[1])>=findDistance(me,closestFuel[0],closestFuel[1])) {
+					return pathFind(me,closestFuel);
+				} else {
+					return pathFind(me,closestKarbonite);
+				}
+				
+				
 			}
 		}
 
@@ -40,6 +60,27 @@ public class MyRobot extends BCAbstractRobot {
 
 	}
 	
+	public boolean canGiveStuff(Robot me) {
+		int absoluteXCastleDistance=Math.abs(castleLocation[0]-me.x);
+		int absoluteYCastleDistance=Math.abs(castleLocation[1]-me.y);
+		if(absoluteXCastleDistance==0||absoluteXCastleDistance==1) {
+			if(absoluteYCastleDistance==0||absoluteYCastleDistance==1) {
+				return true;
+			}
+		}
+		return false;
+	}
+	public boolean locateNearbyCastle(Robot me) {
+		Robot[] visibleRobots=getVisibleRobots();
+		for(int i=0;i<visibleRobots.length;i++) {
+			if(visibleRobots[i].unit==SPECS.CASTLE&&visibleRobots[i].team==me.team) {
+				castleLocation[0]=visibleRobots[i].x;
+				castleLocation[1]=visibleRobots[i].y;
+				return true;
+			}
+		}
+		return false;
+	}
 	public boolean canMineKarbonite(Robot me) {
 		if(karboniteMap[me.x][me.y]==true&&me.karbonite<20) {
 			return true;
@@ -416,7 +457,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	public int[] searchForKarboniteLocaation() {
+	public int[] searchForKarboniteLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
@@ -436,7 +477,7 @@ public class MyRobot extends BCAbstractRobot {
 		return location;
 	}
 
-	public int[] searchForFuelLocaation() {
+	public int[] searchForFuelLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
