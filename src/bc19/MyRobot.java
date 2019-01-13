@@ -10,11 +10,13 @@ public class MyRobot extends BCAbstractRobot {
 	int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
 	boolean[][] passableMap = getPassableMap();
 	int[][] visibleRobotMap = getVisibleRobotMap();
+	boolean[][] karboniteMap=getKarboniteMap();
+	boolean[][] fuelMap=getFuelMap();
 	ArrayList<String> directions;
 
 	public Action turn() {
 		turn++;
-
+		setDirectionsArrayList();
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
 				log("Building a pilgrim.");
@@ -23,6 +25,10 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		if (me.unit == SPECS.PILGRIM) {
+			if(canMineFuel(me)||canMineKarbonite(me)) {
+				log("I mined fuel or karbonite");
+				return mine();
+			}
 			if (turn == 1) {
 				log("I am a pilgrim.");
 
@@ -33,8 +39,22 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 
 	}
+	
+	public boolean canMineKarbonite(Robot me) {
+		if(karboniteMap[me.x][me.y]==true&&me.karbonite<20) {
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean canMineFuel(Robot me) {
+		if(fuelMap[me.x][me.y]==true&&me.fuel<100) {
+			return true;
+		}
+		return false;
+	}
 
-	public ArrayList<String> setDirectionsArrayList() {
+	public void setDirectionsArrayList() {
 		directions.add("NORTH");
 		directions.add("NORTHEAST");
 		directions.add("EAST");
@@ -43,7 +63,6 @@ public class MyRobot extends BCAbstractRobot {
 		directions.add("SOUTHWEST");
 		directions.add("WEST");
 		directions.add("NORTHWEST");
-		return directions;
 	}
 
 	public MoveAction pathFind(Robot me, int[] finalLocation) {
@@ -300,9 +319,8 @@ public class MyRobot extends BCAbstractRobot {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
-		boolean[][] currentKarboniteMap = getKarboniteMap();
-		for (int i = 0; i < currentKarboniteMap.length; i++) {
-			for (int j = 0; j < currentKarboniteMap[i].length; j++) {
+		for (int i = 0; i < karboniteMap.length; i++) {
+			for (int j = 0; j < karboniteMap[i].length; j++) {
 				double distance = findDistance(me, i, j);
 				if (distance < minDistance) {
 					minDistance = distance;
@@ -321,9 +339,8 @@ public class MyRobot extends BCAbstractRobot {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
-		boolean[][] currentFuelMap = getFuelMap();
-		for (int i = 0; i < currentFuelMap.length; i++) {
-			for (int j = 0; j < currentFuelMap[i].length; j++) {
+		for (int i = 0; i < fuelMap.length; i++) {
+			for (int j = 0; j < fuelMap[i].length; j++) {
 				double distance = findDistance(me, i, j);
 				if (distance < minDistance) {
 					minDistance = distance;
