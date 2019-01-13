@@ -2,6 +2,7 @@ package bc19;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -11,7 +12,7 @@ import java.util.stream.Collectors;
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 	public int origin; //coordinates of castle or church
-	
+
 	public Action turn() {
 		turn++;
 		if (me.unit == SPECS.CASTLE) {
@@ -21,7 +22,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (me.unit == SPECS.CHURCH) {
-			
+
 		}
 		if (turn == 1) { //is a robot, not a structure
 			//sets coordinates of origin
@@ -33,10 +34,13 @@ public class MyRobot extends BCAbstractRobot {
 				//log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
 		}
-
+		if (me.unit == SPECS.CRUSADER) {
+			Robot enemy = this.findPrimaryEnemyType(this.findBadGuys());
+			this.attack(enemy.x, enemy.y);
+		}
 		return null;
 	}
-	
+
 	public int[] checkAdjacentPassable() {
 		int x = this.me.x;
 		int y = this.me.y;
@@ -82,49 +86,49 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return new int[]{x, y}; //surrounded by impassable terrain
 	}
-	
+
 	public Action makePilgrims() {
 		int[] spot = checkAdjacentPassable();
 		return buildUnit(SPECS.PILGRIM, spot[0], spot[1]);
 	}
-	
+
 	public Action makeCrusaders() {
 		int[] spot = checkAdjacentPassable();
 		return buildUnit(SPECS.CRUSADER, spot[0], spot[1]);
 	}
-	
+
 	public List<Robot> senseNearbyAllies() {
 		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
 		List<Robot> allies = nearbyRobots.stream().filter(robot -> robot.team == this.me.team).collect(Collectors.toList());
 		return allies;
 	}
-	
-//	public List<Robot> senseNearbyEnemies() {
-//		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
-//		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team != this.me.team).collect(Collectors.toList());
-//		return enemies;
-//	}
-	
-//	public Robot findClosestRobot(List<Robot> robots) {
-//		int leastDistance = 65;
-//		int distance;
-//		int index = 0;
-//		for (int i = 0; i < robots.size(); i++) {
-//			distance = findDiscreteDistance(robots.get(i).x, robots.get(i).y);
-//			if (leastDistance > distance) {
-//				index = i;
-//				leastDistance = distance;
-//			}
-//		}
-//		return robots.get(index);
-//	}
-	
+
+	//	public List<Robot> senseNearbyEnemies() {
+	//		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
+	//		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team != this.me.team).collect(Collectors.toList());
+	//		return enemies;
+	//	}
+
+	//	public Robot findClosestRobot(List<Robot> robots) {
+	//		int leastDistance = 65;
+	//		int distance;
+	//		int index = 0;
+	//		for (int i = 0; i < robots.size(); i++) {
+	//			distance = findDiscreteDistance(robots.get(i).x, robots.get(i).y);
+	//			if (leastDistance > distance) {
+	//				index = i;
+	//				leastDistance = distance;
+	//			}
+	//		}
+	//		return robots.get(index);
+	//	}
+
 	public int findDiscreteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
 		int dx = Math.abs(this.me.x - x);
 		int dy = Math.abs(this.me.y - y);
 		return dx + dy;
 	}
-	
+
 	public Action pilgrimRunAway() {
 		HashSet<Robot> nearbyEnemies = this.findBadGuys();
 		Robot closestEnemy = findClosestRobot(nearbyEnemies);
@@ -133,7 +137,7 @@ public class MyRobot extends BCAbstractRobot {
 		y -= this.me.y - closestEnemy.y;
 		return this.move(x, y); //replace with our move/pathing method later
 	}
-	
+
 	public HashSet<Robot> findBadGuys() {
 		HashSet<Robot> theBadGuys = new HashSet<Robot>();
 		Robot[] visibleBots = getVisibleRobots();
@@ -177,33 +181,54 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return closestBot;
 	}
-	
-	public LinkedList<Robot> findPrimaryEnemyType(HashSet<Robot> potentialEnemies) {
-		LinkedList<Robot> primaryEnemies = new LinkedList<Robot>();
+
+	public HashMap<Integer, HashSet<Robot>> groupByType(HashSet<Robot> potentialEnemies) {
+		HashMap<Integer, HashSet<Robot>> groupedEnemies = new HashMap<Integer, HashSet<Robot>>();
+		groupedEnemies.put(SPECS.CRUSADER, new HashSet<Robot>());
+		groupedEnemies.put(SPECS.PREACHER, new HashSet<Robot>());
+		groupedEnemies.put(SPECS.PROPHET, new HashSet<Robot>());
+		groupedEnemies.put(SPECS.PILGRIM, new HashSet<Robot>());
+		groupedEnemies.put(SPECS.CASTLE, new HashSet<Robot>());
+		groupedEnemies.put(SPECS.CHURCH, new HashSet<Robot>());
 		Iterator<Robot> iter = potentialEnemies.iterator();
 		Robot badGuy;
 		while (iter.hasNext()) {
 			badGuy = iter.next();
-			if (badGuy.unit == SPECS.CRUSADER) {
-				primaryEnemies.addFirst(badGuy);
-			}
-			if (badGuy.unit == SPECS.PREACHER) {
-				primaryEnemies.add
-			}
+			groupedEnemies.get(badGuy.unit).add(badGuy);
 		}
-		return 
+		return groupedEnemies;
 	}
-	
+
+	public Robot findPrimaryEnemyType(HashSet<Robot> potentialEnemies) {
+		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
+		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PREACHER));
+		}
+		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CRUSADER));
+		}
+		if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PILGRIM));
+		}
+		if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CASTLE));
+		}
+		if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CHURCH));
+		}
+		return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PROPHET));
+	}
+
 	public int getMovementRangeRadius() {
 		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].SPEED);
 	}
-	
+
 	public int getMinAttackRangeRadius() {
 		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[0]);
 	}
-	
+
 	public int getMaxAttackRangeRadius() {
 		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[1]);
 	}
-	
+
 }
