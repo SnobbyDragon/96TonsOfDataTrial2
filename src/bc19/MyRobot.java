@@ -123,15 +123,15 @@ public class MyRobot extends BCAbstractRobot {
 	//		return robots.get(index);
 	//	}
 
-	public int findDiscreteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
-		int dx = Math.abs(this.me.x - x);
-		int dy = Math.abs(this.me.y - y);
-		return dx + dy;
-	}
+	//	public int findDiscreteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
+	//		int dx = Math.abs(this.me.x - x);
+	//		int dy = Math.abs(this.me.y - y);
+	//		return dx + dy;
+	//	}
 
 	public Action pilgrimRunAway() {
 		HashSet<Robot> nearbyEnemies = this.findBadGuys();
-		Robot closestEnemy = findClosestRobot(nearbyEnemies);
+		Robot closestEnemy = this.findPrimaryEnemyDistance(nearbyEnemies);
 		int x = 0, y = 0;
 		x -= this.me.x - closestEnemy.x;
 		y -= this.me.y - closestEnemy.y;
@@ -163,6 +163,24 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return weakestBot;
+	}
+
+	// Finds distance between two robots
+	public double findDistance(Robot me, Robot opponent) {
+		int xDistance = opponent.x - me.x;
+		int yDistance = opponent.y - me.y;
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+
+	// Finds distance between a robot and a pair of coordinates
+	public double findDistance(Robot me, int x, int y) {
+		int xDistance = x - me.x;
+		int yDistance = y - me.y;
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+
+	public boolean canAttack(double distance) {
+		return this.getMinAttackRangeRadius() <= distance && distance <= this.getMaxAttackRangeRadius();
 	}
 
 	public Robot findPrimaryEnemyDistance(HashSet<Robot> potentialEnemies) {
@@ -230,7 +248,5 @@ public class MyRobot extends BCAbstractRobot {
 	public int getMaxAttackRangeRadius() {
 		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[1]);
 	}
-
-}
 
 }
