@@ -13,7 +13,7 @@ public class MyRobot extends BCAbstractRobot {
 	boolean[][] karboniteMap=getKarboniteMap();
 	boolean[][] fuelMap=getFuelMap();
 	ArrayList<String> directions;
-
+	ArrayList<Integer> previousLocations=new ArrayList<Integer>();
 	public Action turn() {
 		turn++;
 		setDirectionsArrayList();
@@ -137,76 +137,132 @@ public class MyRobot extends BCAbstractRobot {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
 					if (canMove(me, me.x, me.y + 1)) {
-						return move(0, 1);
+						if(alreadyBeenHere(me,0,1)==false) {
+							return move(0,1);
+						}
 					} else if (canMove(me, me.x, me.y + 2)) {
-						return move(0, 2);
+						if(alreadyBeenHere(me,0,2)==false) {
+							return move(0,2);
+						}
 					} else if (canMove(me, me.x, me.y + 3)) {
-						return move(0, 3);
+						if(alreadyBeenHere(me,0,3)==false) {
+							return move(0,3);
+						}
 					}
 
 				} else if (index == 1) {
 					if (canMove(me, me.x + 1, me.y + 1)) {
-						return move(1, 1);
+						if(alreadyBeenHere(me,1,1)==false) {
+							return move(1,1);
+						}
 					} else if (canMove(me, me.x + 2, me.y + 2)) {
-						return move(2, 2);
+						if(alreadyBeenHere(me,2,2)==false) {
+							return move(2,2);
+						}
 					} else if (canMove(me, me.x + 2, me.y + 1)) {
-						return move(2, 1);
+						if(alreadyBeenHere(me,2,1)==false) {
+							return move(2,1);
+						}
 					} else if (canMove(me, me.x + 1, me.y + 2)) {
-						return move(1, 2);
+						if(alreadyBeenHere(me,1,2)==false) {
+							return move(1,2);
+						}
 					}
 				} else if (index == 2) {
 					if (canMove(me, me.x + 1, me.y)) {
-						return move(1, 0);
+						if(alreadyBeenHere(me,1,0)==false) {
+							return move(1,0);
+						}
 					} else if (canMove(me, me.x + 2, me.y)) {
-						return move(2, 0);
+						if(alreadyBeenHere(me,2,0)==false) {
+							return move(2,0);
+						}
 					} else if (canMove(me, me.x + 3, me.y)) {
-						return move(3, 0);
+						if(alreadyBeenHere(me,3,0)==false) {
+							return move(3,0);
+						}
 					}
 				} else if (index == 3) {
 					if (canMove(me, me.x + 1, me.y - 1)) {
-						return move(1, -1);
+						if(alreadyBeenHere(me,1,-1)==false) {
+							return move(1,-1);
+						}
 					} else if (canMove(me, me.x + 2, me.y - 2)) {
-						return move(2, -2);
+						if(alreadyBeenHere(me,2,-2)==false) {
+							return move(2,-2);
+						}
 					} else if (canMove(me, me.x + 2, me.y - 1)) {
-						return move(2, -1);
+						if(alreadyBeenHere(me,2,-1)==false) {
+							return move(2,-1);
+						}
 					} else if (canMove(me, me.x + 1, me.y - 2)) {
-						return move(1, -2);
+						if(alreadyBeenHere(me,1,-2)==false) {
+							return move(1,-2);
+						}
 					}
 				} else if (index == 4) {
 					if (canMove(me, me.x, me.y - 1)) {
-						return move(0, -1);
+						if(alreadyBeenHere(me,0,-1)==false) {
+							return move(0,-1);
+						}
 					} else if (canMove(me, me.x, me.y - 2)) {
-						return move(0, -2);
+						if(alreadyBeenHere(me,0,-2)==false) {
+							return move(0,-2);
+						}
 					} else if (canMove(me, me.x, me.y - 3)) {
-						return move(0, -3);
+						if(alreadyBeenHere(me,0,-3)==false) {
+							return move(0,-3);
+						}
 					}
 				} else if (index == 5) {
 					if (canMove(me, me.x - 1, me.y - 1)) {
-						return move(-1, -1);
+						if(alreadyBeenHere(me,-1,-1)==false) {
+							return move(-1,-1);
+						}
 					} else if (canMove(me, me.x - 2, me.y - 2)) {
-						return move(-2, -2);
+						if(alreadyBeenHere(me,-2,-2)==false) {
+							return move(-2,-2);
+						}
 					} else if (canMove(me, me.x - 2, me.y - 1)) {
-						return move(-2, -1);
+						if(alreadyBeenHere(me,-2,-1)==false) {
+							return move(-2,-1);
+						}
 					} else if (canMove(me, me.x - 1, me.y - 2)) {
-						return move(-1, -2);
+						if(alreadyBeenHere(me,-1,-2)==false) {
+							return move(-1,-2);
+						}
 					}
 				} else if (index == 6) {
 					if (canMove(me, me.x - 1, me.y)) {
-						return move(-1, 0);
+						if(alreadyBeenHere(me,-1,0)==false) {
+							return move(-1,0);
+						}
 					} else if (canMove(me, me.x - 2, me.y)) {
-						return move(-2, 0);
+						if(alreadyBeenHere(me,-2,0)==false) {
+							return move(-2,0);
+						}
 					} else if (canMove(me, me.x - 3, me.y)) {
-						return move(-3, 0);
+						if(alreadyBeenHere(me,-3,0)==false) {
+							return move(-3,0);
+						}
 					}
 				} else if (index == 7) {
 					if (canMove(me, me.x - 1, me.y + 1)) {
-						return move(-1, 1);
+						if(alreadyBeenHere(me,-1,1)==false) {
+							return move(-1,1);
+						}
 					} else if (canMove(me, me.x - 2, me.y + 2)) {
-						return move(-2, 2);
+						if(alreadyBeenHere(me,-2,2)==false) {
+							return move(-2,2);
+						}
 					} else if (canMove(me, me.x - 2, me.y + 1)) {
-						return move(-2, 1);
+						if(alreadyBeenHere(me,-2,1)==false) {
+							return move(-2,1);
+						}
 					} else if (canMove(me, me.x - 1, me.y + 2)) {
-						return move(-1, 2);
+						if(alreadyBeenHere(me,-1,2)==false) {
+							return move(-1,2);
+						}
 					}
 				}
 			}
@@ -215,44 +271,68 @@ public class MyRobot extends BCAbstractRobot {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
 					if (canMove(me, me.x, me.y + 1)) {
-						return move(0, 1);
+						if(alreadyBeenHere(me,0,1)==false) {
+							return move(0,1);
+						}
 					} else if (canMove(me, me.x, me.y + 2)) {
-						return move(0, 2);
+						if(alreadyBeenHere(me,0,2)==false) {
+							return move(0,2);
+						}
 					}
 
 				} else if (index == 1) {
 					if (canMove(me, me.x + 1, me.y + 1)) {
-						return move(1, 1);
+						if(alreadyBeenHere(me,1,1)==false) {
+							return move(1,1);
+						}
 					}
 				} else if (index == 2) {
 					if (canMove(me, me.x + 1, me.y)) {
-						return move(1, 0);
+						if(alreadyBeenHere(me,1,0)==false) {
+							return move(1,0);
+						}
 					} else if (canMove(me, me.x + 2, me.y)) {
-						return move(2, 0);
+						if(alreadyBeenHere(me,1,0)==false) {
+							return move(1,0);
+						}
 					}
 				} else if (index == 3) {
 					if (canMove(me, me.x + 1, me.y - 1)) {
-						return move(1, -1);
+						if(alreadyBeenHere(me,1,-1)==false) {
+							return move(1,-1);
+						}
 					}
 				} else if (index == 4) {
 					if (canMove(me, me.x, me.y - 1)) {
-						return move(0, -1);
+						if(alreadyBeenHere(me,0,-1)==false) {
+							return move(0,-1);
+						}
 					} else if (canMove(me, me.x, me.y - 2)) {
-						return move(0, -2);
+						if(alreadyBeenHere(me,0,-2)==false) {
+							return move(0,-2);
+						}
 					}
 				} else if (index == 5) {
 					if (canMove(me, me.x - 1, me.y - 1)) {
-						return move(-1, -1);
+						if(alreadyBeenHere(me,-1,-1)==false) {
+							return move(-1,-1);
+						}
 					}
 				} else if (index == 6) {
 					if (canMove(me, me.x - 1, me.y)) {
-						return move(-1, 0);
+						if(alreadyBeenHere(me,-1,0)==false) {
+							return move(-1,0);
+						}
 					} else if (canMove(me, me.x - 2, me.y)) {
-						return move(-2, 0);
+						if(alreadyBeenHere(me,-2,0)==false) {
+							return move(-2,0);
+						}
 					}
 				} else if (index == 7) {
 					if (canMove(me, me.x - 1, me.y + 1)) {
-						return move(-1, 1);
+						if(alreadyBeenHere(me,-1,1)==false) {
+							return move(-1,1);
+						}
 					}
 				}
 			}
@@ -268,6 +348,27 @@ public class MyRobot extends BCAbstractRobot {
 			return true;
 		}
 		return false;
+	}
+	
+	public boolean alreadyBeenHere(Robot me, int dx, int dy) {
+		boolean alreadyOccupied=false;
+		for(int prev=0;prev<previousLocations.size();prev+=2) {
+			if(me.x+dx==previousLocations.get(prev)&&me.y+dy==previousLocations.get(prev+1)) {
+				alreadyOccupied=true;
+			}
+		}
+		if(alreadyOccupied==false) {
+			if(previousLocations.size()>=6) {
+				previousLocations.remove(4);
+				previousLocations.remove(5);
+				previousLocations.add(0, me.x);
+				previousLocations.add(1, me.y);
+			} else {
+				previousLocations.add(0, me.x);
+				previousLocations.add(1, me.y);
+			}
+		}
+		return alreadyOccupied;
 	}
 
 	// Finds distance between two robots
