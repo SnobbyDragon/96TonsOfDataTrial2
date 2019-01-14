@@ -53,7 +53,7 @@ public class MyRobot extends BCAbstractRobot {
     	//696969 is alert value :)
     	//broadcasts sq radius of 10 or, if less than 10 fuel, longest possible distance
     	public void alertEnemiesNearby() {
-    		if(me.health>me.lastHealth) {
+    		if(me.health<this.lastHealth) {
     			log("i took damage");
     			int sigRad = 10;
     			if(sigRad>me.fuel) {
