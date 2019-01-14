@@ -1,33 +1,82 @@
 package bc19;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
-	int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
-	boolean[][] passableMap = getPassableMap();
-	int[][] visibleRobotMap = getVisibleRobotMap();
-	boolean[][] karboniteMap=getKarboniteMap();
-	boolean[][] fuelMap=getFuelMap();
-	ArrayList<String> directions;
-	ArrayList<Integer> previousLocations=new ArrayList<Integer>();
-	boolean haveCastle=false;
-	int[] castleLocation=new int[2];
+	public int[] rotationTries;
+	public boolean[][] passableMap;
+	public int[][] visibleRobotMap;
+	public boolean[][] karboniteMap;
+	public boolean[][] fuelMap;
+	public ArrayList<String> directions;
+	ArrayList<Integer> previousLocations;
+	public boolean haveCastle;
+	public int[] castleLocation;
 	public Action turn() {
 		turn++;
-		setDirectionsArrayList();
+		log("Global karbonite: "+karbonite);
+		log("Global fuel: "+fuel);
+		int[] firstRotationTries = { 0, -1, 1, -2, 2, -3, 3 };
+	
+		rotationTries=firstRotationTries;
+		/*passableMap = getPassableMap();
+		visibleRobotMap = getVisibleRobotMap();
+		karboniteMap=getKarboniteMap();
+		fuelMap=getFuelMap();
+		previousLocations=new ArrayList<Integer>();
+		haveCastle=false;
+		castleLocation=new int[2];*/
+		if(turn==1) {
+			directions=new ArrayList<String>();
+			setDirectionsArrayList();
+			haveCastle=false;
+			castleLocation=new int[2];
+		}
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
 				log("Building a pilgrim.");
 				return buildUnit(SPECS.PILGRIM, 1, 0);
 			}
+			log("Castle X: "+me.x);
+			log("Castle Y: "+me.y);
 		}
 
 		if (me.unit == SPECS.PILGRIM) {
-			if(canMineFuel(me)||canMineKarbonite(me)) {
+			log("My karbonite: "+me.karbonite);
+			log("My fuel: "+me.fuel);
+			log("Have Castle: "+haveCastle);
+			log("My Castle X: "+castleLocation[0]);
+			log("My Castle Y: "+castleLocation[1]);
+			if(!haveCastle) {
+				if(locateNearbyCastle(me)) {
+					haveCastle=true;
+				}
+			}
+			int[] karboniteLocationFind=searchForKarboniteLocation();
+			int[] fuelLocationFind=searchForFuelLocation();
+			if(canMineKarbonite(me)||canMineFuel(me)) {
+				return mine();
+			}
+			if(canGiveStuff(me)) {
+				int xCastle=castleLocation[0]-me.x;
+				int yCastle=castleLocation[1]-me.y;
+				return give(xCastle,yCastle,me.karbonite,me.fuel);
+			}
+			if(me.karbonite==20) {
+				return pathFind(me,castleLocation);
+			} else {
+				if(findDistance(me,karboniteLocationFind[0],karboniteLocationFind[1])>=findDistance(me,fuelLocationFind[0],fuelLocationFind[1])) {
+					return pathFind(me,fuelLocationFind);
+				} else {
+					return pathFind(me,karboniteLocationFind);
+				}
+			}
+			/*if(canMineFuel(me)||canMineKarbonite(me)) {
 				return mine();
 			}
 			if (!haveCastle) {
@@ -53,9 +102,9 @@ public class MyRobot extends BCAbstractRobot {
 				}
 				
 				
-			}
+			}*/
 		}
-
+		log("Did nothing");
 		return null;
 
 	}
@@ -65,7 +114,9 @@ public class MyRobot extends BCAbstractRobot {
 		int absoluteYCastleDistance=Math.abs(castleLocation[1]-me.y);
 		if(absoluteXCastleDistance==0||absoluteXCastleDistance==1) {
 			if(absoluteYCastleDistance==0||absoluteYCastleDistance==1) {
-				return true;
+				if(me.karbonite==20||me.fuel==100) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -82,14 +133,14 @@ public class MyRobot extends BCAbstractRobot {
 		return false;
 	}
 	public boolean canMineKarbonite(Robot me) {
-		if(karboniteMap[me.x][me.y]==true&&me.karbonite<20) {
+		if(karboniteMap[me.y][me.x]==true&&me.karbonite<20) {
 			return true;
 		}
 		return false;
 	}
 	
 	public boolean canMineFuel(Robot me) {
-		if(fuelMap[me.x][me.y]==true&&me.fuel<100) {
+		if(fuelMap[me.y][me.x]==true&&me.fuel<100) {
 			return true;
 		}
 		return false;
@@ -105,13 +156,22 @@ public class MyRobot extends BCAbstractRobot {
 		directions.add("WEST");
 		directions.add("NORTHWEST");
 	}
-
+	
+	public double findDistance(double xDistance, double yDistance) {
+		return Math.pow(xDistance, 2)+Math.pow(yDistance, 2);
+	}
 	public MoveAction pathFind(Robot me, int[] finalLocation) {
 		if (fuel <= 30) {
 			return null;
 		}
 		int xDistance = finalLocation[0] - me.x;
 		int yDistance = finalLocation[1] - me.y;
+		double officialDistance=findDistance(xDistance,yDistance);
+		if(xDistance==0&&yDistance==0) {
+			return null;
+		}
+		log("X distance: "+xDistance);
+		log("Y distance: "+yDistance);
 		int quadrant;
 		double absoluteXDistance = Math.abs(xDistance);
 		double absoluteYDistance = Math.abs(yDistance);
@@ -120,7 +180,7 @@ public class MyRobot extends BCAbstractRobot {
 		double piEight = Math.PI / 8;
 		double piThreeEight = piEight * 3;
 		String optimalDirection = "";
-		if (xDistance >= 0 && yDistance >= 0) {
+		if (xDistance >= 0 && yDistance <= 0) {
 			quadrant = 1;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -130,7 +190,7 @@ public class MyRobot extends BCAbstractRobot {
 			} else {
 				optimalDirection = "NORTHEAST";
 			}
-		} else if (xDistance <= 0 && yDistance >= 0) {
+		} else if (xDistance <= 0 && yDistance <= 0) {
 			quadrant = 2;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -140,7 +200,7 @@ public class MyRobot extends BCAbstractRobot {
 			} else {
 				optimalDirection = "NORTHWEST";
 			}
-		} else if (xDistance <= 0 && yDistance <= 0) {
+		} else if (xDistance <= 0 && yDistance >= 0) {
 			quadrant = 3;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -150,7 +210,7 @@ public class MyRobot extends BCAbstractRobot {
 			} else {
 				optimalDirection = "SOUTHWEST";
 			}
-		} else if (xDistance >= 0 && yDistance <= 0) {
+		} else if (xDistance >= 0 && yDistance >= 0) {
 			quadrant = 4;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -173,7 +233,106 @@ public class MyRobot extends BCAbstractRobot {
 		// locations
 		// Move, and update the previous location list
 		// Switch directions and repeat this whole process
-		if (me.unit == SPECS.CRUSADER) {
+		log("Optimal Direction: "+optimalDirection);
+		for(int i=0;i<rotationTries.length;i++) {
+			int index=(directions.indexOf(optimalDirection)+i)%8;
+			if(index==0) {
+				if(officialDistance==1) {
+					try {
+						return move(0,-1);
+					} catch (Exception d) {
+						
+					}
+				}
+				try {
+				return move(0,-2);
+				} catch (Exception e) {
+					try {
+						return move(0,-1);
+					} catch (Exception f) {
+						
+					}
+				}
+			} else if(index==1) {
+				try {
+				return move(1,-1);
+				} catch (Exception e) {
+									
+				}
+			} else if(index==2) {
+				if(officialDistance==1) {
+					try {
+						return move(1,0);
+					} catch (Exception d) {
+						
+					}
+				}
+				try {
+				return move(2,0);
+				} catch (Exception e) {
+					try {
+						return move(1,0);
+					} catch (Exception f) {
+						
+					}
+				}
+			} else if(index==3) {
+				try {
+				return move(1,1);
+				} catch (Exception e) {
+					
+				}
+			} else if(index==4) {
+				if(officialDistance==1) {
+					try {
+						return move(0,1);
+					} catch (Exception d) {
+						
+					}
+				}
+				try {
+				return move(0,2);
+				} catch (Exception e) {
+					try {
+						return move(0,1);
+					} catch (Exception f) {
+						
+					}
+				}
+			} else if(index==5) {
+				try {
+				return move(-1,1);
+				} catch (Exception e) {
+					
+				}
+			} else if(index==6) {
+				if(officialDistance==1) {
+					try {
+						return move(-1,0);
+					} catch (Exception d) {
+						
+					}
+				}
+				try {
+				return move(-2,0);
+				} catch (Exception e) {
+					try {
+						return move(-1,0);
+					} catch (Exception f) {
+						
+					}
+				}
+			} else if(index==7) {
+				try {
+				return move(-1,-1);
+				} catch (Exception e) {
+					
+				}
+			}
+		}
+		return null;
+
+		/*if (me.unit == SPECS.CRUSADER) {
 			for (int i = 0; i < rotationTries.length; i++) {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
@@ -377,8 +536,7 @@ public class MyRobot extends BCAbstractRobot {
 					}
 				}
 			}
-		}
-		return null;
+		}*/
 	}
 
 	public boolean canMove(Robot me, int finalX, int finalY) {
@@ -463,17 +621,24 @@ public class MyRobot extends BCAbstractRobot {
 		int minYCoordinate = -1;
 		for (int i = 0; i < karboniteMap.length; i++) {
 			for (int j = 0; j < karboniteMap[i].length; j++) {
-				double distance = findDistance(me, i, j);
-				if (distance < minDistance) {
-					minDistance = distance;
-					minXCoordinate = i;
-					minYCoordinate = j;
+				if(karboniteMap[i][j]==true) {
+					double distance = findDistance(me, j, i);
+					if (distance < minDistance) {
+						minDistance = distance;
+						minXCoordinate = j;
+						minYCoordinate = i;
+					}
 				}
 			}
 		}
 		int[] location = new int[2];
 		location[0] = minXCoordinate;
 		location[1] = minYCoordinate;
+		log("My robot's X location: "+me.x);
+		log("My robot's Y location: "+me.y);
+		log("Karbonite X location: " +location[0]);
+		log("Karbonite Y location: "+location[1]);
+		log("Distance: "+minDistance);
 		return location;
 	}
 
@@ -483,17 +648,24 @@ public class MyRobot extends BCAbstractRobot {
 		int minYCoordinate = -1;
 		for (int i = 0; i < fuelMap.length; i++) {
 			for (int j = 0; j < fuelMap[i].length; j++) {
-				double distance = findDistance(me, i, j);
-				if (distance < minDistance) {
-					minDistance = distance;
-					minXCoordinate = i;
-					minYCoordinate = j;
+				if(fuelMap[i][j]==true) {
+					double distance = findDistance(me, j, i);
+					if (distance < minDistance) {
+						minDistance = distance;
+						minXCoordinate = j;
+						minYCoordinate = i;
+					}
 				}
 			}
 		}
 		int[] location = new int[2];
 		location[0] = minXCoordinate;
 		location[1] = minYCoordinate;
+		log("My robot's X location: "+me.x);
+		log("My robot's Y location: "+me.y);
+		log("Fuel X location: " +location[0]);
+		log("Fuel Y location: "+location[1]);
+		log("Distance: "+minDistance);
 		return location;
 	}
 
