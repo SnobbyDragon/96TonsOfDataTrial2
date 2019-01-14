@@ -75,7 +75,7 @@ public class MyRobot extends BCAbstractRobot {
 		    
 	//returns true if pilgrim can mine karbonite
     	public boolean canMineKarbonite() {
-    	if me.unit == SPECS.PILGRIM && (karboniteMap[me.y][me.x]) {
+    	if (me.unit == SPECS.PILGRIM && (karboniteMap[me.y][me.x])) {
 			if(me.fuel>0&&me.karbonite<20) {
 				log("mining karbonite");
 				return true;
