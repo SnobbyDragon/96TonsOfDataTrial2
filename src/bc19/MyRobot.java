@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
@@ -25,11 +23,11 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
 				log("Building a pilgrim.");
-				return buildUnit(SPECS.PILGRIM, 1, 0);
+				return this.makePilgrims();
 			}
 		}
 		if (me.unit == SPECS.PILGRIM) {
-			if(canMineFuel(me)||canMineKarbonite(me)) {
+			if (canMineFuel(me)||canMineKarbonite(me)) {
 				return mine();
 			}
 			if (!haveCastle) {
@@ -38,29 +36,29 @@ public class MyRobot extends BCAbstractRobot {
 				}
 				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
-			if(canGiveStuff(me)) {
+			if (canGiveStuff(me)) {
 				int xCastle=castleLocation[0]-me.x;
 				int yCastle=castleLocation[1]-me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
-			if(me.karbonite==20||me.fuel==100) {
+			if (me.karbonite==20||me.fuel==100) {
 				return pathFind(me,castleLocation);
-			} else {
+			}
+			else {
 				int[] closestKarbonite = searchForKarboniteLocation();
 				int[] closestFuel = searchForFuelLocation();
-				if(findDistance(me,closestKarbonite[0],closestKarbonite[1])>=findDistance(me,closestFuel[0],closestFuel[1])) {
+				if (findDistance(me,closestKarbonite[0],closestKarbonite[1])>=findDistance(me,closestFuel[0],closestFuel[1])) {
 					return pathFind(me,closestFuel);
-				} else {
+				}
+				else {
 					return pathFind(me,closestKarbonite);
 				}
-
-
 			}
 		}
 		if (me.unit == SPECS.CRUSADER) {
 			HashSet<Robot> enemies = this.findBadGuys();
 			if (!enemies.isEmpty()) {
-				Robot enemy = this.findPrimaryEnemyType(enemies);
+				Robot enemy = this.findPrimaryEnemyTypeHealth(enemies);
 				return attack(enemy.x, enemy.y);
 			}
 			if (locateNearbyCastle(this.me)) {
@@ -510,41 +508,9 @@ public class MyRobot extends BCAbstractRobot {
 		return buildUnit(SPECS.CRUSADER, spot[0], spot[1]);
 	}
 
-	public List<Robot> senseNearbyAllies() {
-		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
-		List<Robot> allies = nearbyRobots.stream().filter(robot -> robot.team == this.me.team).collect(Collectors.toList());
-		return allies;
-	}
-
-	//	public List<Robot> senseNearbyEnemies() {
-	//		List<Robot> nearbyRobots = new ArrayList<Robot>(Arrays.asList(this.getVisibleRobots()));
-	//		List<Robot> enemies = nearbyRobots.stream().filter(robot -> robot.team != this.me.team).collect(Collectors.toList());
-	//		return enemies;
-	//	}
-
-	//	public Robot findClosestRobot(List<Robot> robots) {
-	//		int leastDistance = 65;
-	//		int distance;
-	//		int index = 0;
-	//		for (int i = 0; i < robots.size(); i++) {
-	//			distance = findDiscreteDistance(robots.get(i).x, robots.get(i).y);
-	//			if (leastDistance > distance) {
-	//				index = i;
-	//				leastDistance = distance;
-	//			}
-	//		}
-	//		return robots.get(index);
-	//	}
-
-	//	public int findDiscreteDistance(int x, int y) { //calculates distance between this robot and another point (distance = number of moves)
-	//		int dx = Math.abs(this.me.x - x);
-	//		int dy = Math.abs(this.me.y - y);
-	//		return dx + dy;
-	//	}
-
 	public Action pilgrimRunAway() {
 		HashSet<Robot> nearbyEnemies = this.findBadGuys();
-		Robot closestEnemy = this.findPrimaryEnemyDistance(nearbyEnemies);
+		Robot closestEnemy = this.findClosestThreat(nearbyEnemies);
 		int x = 0, y = 0;
 		x -= this.me.x - closestEnemy.x;
 		y -= this.me.y - closestEnemy.y;
@@ -630,7 +596,7 @@ public class MyRobot extends BCAbstractRobot {
 		return groupedEnemies;
 	}
 
-	public Robot findPrimaryEnemyType(HashSet<Robot> potentialEnemies) {
+	public Robot findPrimaryEnemyTypeHealth(HashSet<Robot> potentialEnemies) {
 		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
 		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
 			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PREACHER));
@@ -648,6 +614,17 @@ public class MyRobot extends BCAbstractRobot {
 			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CHURCH));
 		}
 		return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PROPHET));
+	}
+	
+	public Robot findClosestThreat(HashSet<Robot> potentialEnemies) {
+		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
+		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PREACHER));
+		}
+		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
+		}
+		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 	}
 
 	public int getMovementRangeRadius() {
