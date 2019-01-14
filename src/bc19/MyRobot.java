@@ -11,10 +11,11 @@ public class MyRobot extends BCAbstractRobot {
 
 	public Action turn() {
 		turn++;
+		//log("Turn: "+turn);
 
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
-				log("Building a pilgrim.");
+				//log("Building a pilgrim.");
 				return buildUnit(SPECS.PILGRIM,1,0);
 			}
 		}
@@ -25,7 +26,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (me.unit == SPECS.PILGRIM) {
 			if (turn == 1) {
-				log("I am a pilgrim.");
+				//log("I am a pilgrim.");
 
 				//log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
@@ -44,6 +45,9 @@ public class MyRobot extends BCAbstractRobot {
     		}
     	
     		lastHealth = me.health;
+    		//log("health: "+me.health);
+    		//log("last health: "+this.lastHealth);
+
 
 		return null;
 
@@ -54,12 +58,12 @@ public class MyRobot extends BCAbstractRobot {
     	//broadcasts sq radius of 10 or, if less than 10 fuel, longest possible distance
     	public void alertEnemiesNearby() {
     		if(me.health<this.lastHealth) {
-    			log("i took damage");
+    			//log("i took damage");
     			int sigRad = 10;
     			if(sigRad>me.fuel) {
     				sigRad=me.fuel;
     			}
-    			log("sending alert");
+    			//log("sending alert");
     			signal(696969,sigRad);
     		}
     	}
@@ -68,7 +72,7 @@ public class MyRobot extends BCAbstractRobot {
     	public boolean canMineFuel() {
     		if (me.unit == SPECS.PILGRIM && (fuelMap[me.y][me.x])) {
     			if (me.fuel>0&&me.fuel<100){
-    				log("mining fuel");
+    				//log("mining fuel");
     				return true;
     			}
     		}
@@ -78,7 +82,7 @@ public class MyRobot extends BCAbstractRobot {
     	public boolean canMineKarbonite() {
     	if (me.unit == SPECS.PILGRIM && (karboniteMap[me.y][me.x])) {
 			if(me.fuel>0&&me.karbonite<20) {
-				log("mining karbonite");
+				//log("mining karbonite");
 				return true;
 			}
     	}
