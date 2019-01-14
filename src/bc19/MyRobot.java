@@ -39,6 +39,7 @@ public class MyRobot extends BCAbstractRobot {
 						if (canMove(1,1))
 						{
 							buildUnit(SPECS.PILGRIM, 1, 1);
+							bots.put("pilgrims", bots.get("pilgrims") + 1);
 							log("built pilgrim");
 						}
 					} catch (Exception e) {
@@ -51,6 +52,7 @@ public class MyRobot extends BCAbstractRobot {
 						if (canMove(0,1))
 						{
 							buildUnit(SPECS.CRUSADER, 0, 1);
+							bots.put("crusaders", bots.get("crusaders") + 1);
 							log("built crusader");
 						}
 					} catch (Exception e) {
@@ -63,16 +65,19 @@ public class MyRobot extends BCAbstractRobot {
 						if (canMove(2,2))
 						{
 							buildUnit(SPECS.PREACHER, 2, 2);
+							bots.put("preachers", bots.get("preachers") + 1);
 							log("built preacher");
 						}
 						else if(canMove(-2,2))
 						{
 							buildUnit(SPECS.PREACHER, -2, 2);
+							bots.put("preachers", bots.get("preachers") + 1);
 							log("built preacher");
 						}
 						else if(canMove(0,-1))
 						{
 							buildUnit(SPECS.PREACHER, 0, -1);
+							bots.put("preachers", bots.get("preachers") + 1);
 							log("built preacher");
 						}
 					} catch (Exception e) {
@@ -82,6 +87,10 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		if (me.unit == SPECS.PILGRIM) {
+			if (me.health <= 0)
+			{
+				bots.put("pilgrims", bots.get("pilgrims") - 1);
+			}
 			if(canMineFuel(me)||canMineKarbonite(me)) {
 				return mine();
 			}
@@ -112,12 +121,20 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		
 		if (me.unit == SPECS.CRUSADER) {
+			if (me.health <= 0)
+			{
+				bots.put("crusaders", bots.get("crusaders") - 1);
+			}
 			Robot enemy = this.findPrimaryEnemyType(this.findBadGuys());
 			this.attack(enemy.x, enemy.y);
 		}
 		
 		if(me.unit == SPECS.PREACHER)
 		{
+			if (me.health <= 0)
+			{
+				bots.put("preachers", bots.get("preachers") - 1);
+			}
 			try {
 				if(fuel>=15)
 				{
