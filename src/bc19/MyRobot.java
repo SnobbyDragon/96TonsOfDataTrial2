@@ -17,13 +17,39 @@ public class MyRobot extends BCAbstractRobot {
 	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
 	public boolean haveCastle = false;
 	public int[] castleLocation = new int[2];
-	
+	public HashMap<String, Integer> bots = new HashMap<String, Integer>();
+	public int castleNum = 0;
+
 	public Action turn() {
 		turn++;
+		if (turn == 1)
+		{
+			bots.put("pilgrims", 0);
+			bots.put("crusaders", 0);
+			bots.put("preachers", 0);
+		}
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
-				log("Building a pilgrim.");
-				return this.makePilgrims();
+				castleNum++;
+				if (bots.get("pilgrims") != 5 + castleNum) {
+					if (this.canBuild(SPECS.PILGRIM))  {
+						log("built pilgrim");
+						bots.put("pilgrims", bots.get("pilgrims") + 1);
+						return this.makePilgrims();
+					}
+				}
+				if (bots.get("crusaders") != 10 + castleNum*2)
+					if (this.canBuild(SPECS.CRUSADER)) {
+						log("built crusader");
+						bots.put("crusaders", bots.get("crusaders") + 1);
+						return this.makeCrusaders();
+					}
+				if (bots.get("preachers") != castleNum*3)
+					if(this.canBuild(SPECS.PREACHER)) {
+						log("built preacher");
+						bots.put("preachers", bots.get("preachers") + 1);
+						return this.makePreachers();
+					}
 			}
 		}
 		if (me.unit == SPECS.PILGRIM) {
@@ -67,7 +93,6 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-
 		return null;
 	}
 
@@ -455,9 +480,9 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		return new int[]{x, y}; //surrounded by impassable terrain
+		return null; //surrounded by impassable terrain
 	}
-	
+
 	public int[] searchForKarboniteLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
@@ -506,6 +531,11 @@ public class MyRobot extends BCAbstractRobot {
 	public Action makeCrusaders() {
 		int[] spot = checkAdjacentPassable();
 		return buildUnit(SPECS.CRUSADER, spot[0], spot[1]);
+	}
+
+	public Action makePreachers() {
+		int[] spot = checkAdjacentPassable();
+		return buildUnit(SPECS.PREACHER, spot[0], spot[1]);
 	}
 
 	public Action pilgrimRunAway() {
@@ -615,7 +645,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PROPHET));
 	}
-	
+
 	public Robot findClosestThreat(HashSet<Robot> potentialEnemies) {
 		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
 		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
@@ -625,6 +655,10 @@ public class MyRobot extends BCAbstractRobot {
 			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
 		}
 		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
+	}
+	
+	public boolean canBuild(int unitID) {
+		return this.fuel >= SPECS.UNITS[unitID].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[unitID].CONSTRUCTION_KARBONITE && this.checkAdjacentPassable()!=null;
 	}
 
 	public int getMovementRangeRadius() {
