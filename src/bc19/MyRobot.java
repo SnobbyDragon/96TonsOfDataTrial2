@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn = 0;
+	private int lastHealth;
 
 	public Action turn() {
 		turn++;
