@@ -34,7 +34,7 @@ public class MyRobot extends BCAbstractRobot {
 			castleNum++;
 			if (bots.get("pilgrims") != 5 + castleNum) {
 				if (this.canBuild(SPECS.PILGRIM))  {
-					log("built pilgrim at x=" + this.checkAdjacentPassable()[0] + " y=" + this.checkAdjacentPassable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
+					log("built pilgrim at x=" + this.checkAdjacentAvailable()[0] + " y=" + this.checkAdjacentAvailable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
 					bots.put("pilgrims", bots.get("pilgrims") + 1);
 					return this.makeUnit(SPECS.PILGRIM);
 				}
@@ -443,45 +443,47 @@ public class MyRobot extends BCAbstractRobot {
 		return alreadyOccupied;
 	}
 
-	public int[] checkAdjacentPassable() {
+	
+	public int[] checkAdjacentAvailable() {
+		visibleRobotMap = this.getVisibleRobotMap();
 		int x = this.me.x;
 		int y = this.me.y;
 		if (x > 0) { //can check left
 			if (y > 0) { //can check up
-				if (this.passableMap[y-1][x-1]) { //checks up left
+				if (this.passableMap[y-1][x-1] && visibleRobotMap[y-1][x-1]==0) { //checks up left
 					return new int[]{x-1, y-1};
 				}
 			}
-			if (this.passableMap[y][x-1]) { //checks middle left
+			if (this.passableMap[y][x-1] && visibleRobotMap[y][x-1]==0) { //checks middle left
 				return new int[]{x-1, y};
 			}
 			if (y < this.passableMap.length - 1) { //can check down
-				if (this.passableMap[y+1][x-1]) { //checks down left
+				if (this.passableMap[y+1][x-1] && visibleRobotMap[y+1][x-1]==0) { //checks down left
 					return new int[]{x-1, y+1};
 				}
 			}
 		}
 		if (y > 0) { //can check up
-			if (this.passableMap[y-1][x]) { //checks middle up
+			if (this.passableMap[y-1][x] && visibleRobotMap[y-1][x]==0) { //checks middle up
 				return new int[]{x, y-1};
 			}
 		}
 		if (y < this.passableMap.length - 1) { //can check down
-			if (this.passableMap[y+1][x]) { //checks middle down
+			if (this.passableMap[y+1][x] && visibleRobotMap[y+1][x]==0) { //checks middle down
 				return new int[]{x, y+1};
 			}
 		}
 		if (x < this.passableMap[0].length - 1) { //can check right
 			if (y > 0) { //can check up
-				if (this.passableMap[y-1][x+1]) { //checks up right
+				if (this.passableMap[y-1][x+1] && visibleRobotMap[y-1][x+1]==0) { //checks up right
 					return new int[]{x+1, y-1};
 				}
 			}
-			if (this.passableMap[y][x+1]) { //checks middle right
+			if (this.passableMap[y][x+1] && visibleRobotMap[y][x+1]==0) { //checks middle right
 				return new int[]{x+1, y};
 			}
 			if (y < this.passableMap.length - 1) { //can check down
-				if (this.passableMap[y+1][x+1]) { //checks down right
+				if (this.passableMap[y+1][x+1] && visibleRobotMap[y+1][x+1]==0) { //checks down right
 					return new int[]{x+1, y+1};
 				}
 			}
@@ -534,7 +536,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	public Action makeUnit(int type) {
-		int[] spot = this.checkAdjacentPassable();
+		int[] spot = this.checkAdjacentAvailable();
 		return this.buildUnit(type, spot[0] - this.me.x, spot[1] - this.me.y);
 	}
 
@@ -672,7 +674,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	public boolean canBuild(int type) {
-		return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentPassable()!=null;
+		return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentAvailable()!=null;
 	}
 
 	public int getMovementRangeRadius() {
