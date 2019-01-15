@@ -31,50 +31,52 @@ public class MyRobot extends BCAbstractRobot {
 			bots.put("preachers", 0);
 		}
 		if (me.unit == SPECS.CASTLE) {
-			if (turn == 1) {
-				castleNum++;
-				if (bots.get("pilgrims") != 5 + castleNum) {
-					if (this.canBuild(SPECS.PILGRIM))  {
-						log("built pilgrim at x=" + this.checkAdjacentPassable()[0] + " y=" + this.checkAdjacentPassable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
-						bots.put("pilgrims", bots.get("pilgrims") + 1);
-						return this.makeUnit(SPECS.PILGRIM);
-					}
+			castleNum++;
+			if (bots.get("pilgrims") != 5 + castleNum) {
+				if (this.canBuild(SPECS.PILGRIM))  {
+					log("built pilgrim at x=" + this.checkAdjacentPassable()[0] + " y=" + this.checkAdjacentPassable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
+					bots.put("pilgrims", bots.get("pilgrims") + 1);
+					return this.makeUnit(SPECS.PILGRIM);
 				}
-				if (bots.get("crusaders") != 10 + castleNum*2)
-					if (this.canBuild(SPECS.CRUSADER)) {
-						log("built crusader");
-						bots.put("crusaders", bots.get("crusaders") + 1);
-						return this.makeUnit(SPECS.CRUSADER);
-					}
-				if (bots.get("preachers") != castleNum*3)
-					if(this.canBuild(SPECS.PREACHER)) {
-						log("built preacher");
-						bots.put("preachers", bots.get("preachers") + 1);
-						return this.makeUnit(SPECS.PREACHER);
-					}
 			}
+			if (bots.get("crusaders") != 10 + castleNum*2)
+				if (this.canBuild(SPECS.CRUSADER)) {
+					log("built crusader");
+					bots.put("crusaders", bots.get("crusaders") + 1);
+					return this.makeUnit(SPECS.CRUSADER);
+				}
+			if (bots.get("preachers") != castleNum*3)
+				if(this.canBuild(SPECS.PREACHER)) {
+					log("built preacher");
+					bots.put("preachers", bots.get("preachers") + 1);
+					return this.makeUnit(SPECS.PREACHER);
+				}
 		}
 		if (me.unit == SPECS.PILGRIM) {
 			if (canMineFuel(me)||canMineKarbonite(me)) {
+				this.log("mining");
 				return mine();
 			}
 			if (!haveCastle) {
-				if(locateNearbyCastle(me)) {
+				if(locateNearbyCastle()) {
 					haveCastle = true;
 				}
 				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
-			if (canGiveStuff(me)) {
-				int xCastle=castleLocation[0]-me.x;
-				int yCastle=castleLocation[1]-me.y;
+			if (haveCastle&&canGiveStuff()) {
+				this.log("giving stuff to castle");
+				int xCastle=castleLocation[0]-this.me.x;
+				int yCastle=castleLocation[1]-this.me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
-			if (me.karbonite==20||me.fuel==100) {
+			if (haveCastle&&(me.karbonite==20||me.fuel==100)) {
+				this.log("returning to castle");
 				return pathFind(me,castleLocation);
 			}
 			else {
 				int[] closestKarbonite = searchForKarboniteLocation();
 				int[] closestFuel = searchForFuelLocation();
+				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\bfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
 				if (findDistance(me,closestKarbonite[0],closestKarbonite[1])>=findDistance(me,closestFuel[0],closestFuel[1])) {
 					return pathFind(me,closestFuel);
 				}
@@ -89,7 +91,7 @@ public class MyRobot extends BCAbstractRobot {
 				Robot enemy = this.findPrimaryEnemyTypeHealth(enemies);
 				return attack(enemy.x, enemy.y);
 			}
-			if (locateNearbyCastle(this.me)) {
+			if (locateNearbyCastle()) {
 				if (this.findDistance(this.me, this.castleLocation[0], this.castleLocation[1]) == 1) {
 					return this.move(this.me.x - this.castleLocation[0], this.me.y - this.castleLocation[1]);
 				}
@@ -98,36 +100,38 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	public boolean canGiveStuff(Robot me) {
-		int absoluteXCastleDistance=Math.abs(castleLocation[0]-me.x);
-		int absoluteYCastleDistance=Math.abs(castleLocation[1]-me.y);
+	public boolean canGiveStuff() {
+		int absoluteXCastleDistance=Math.abs(castleLocation[0]-this.me.x);
+		int absoluteYCastleDistance=Math.abs(castleLocation[1]-this.me.y);
 		if(absoluteXCastleDistance==0||absoluteXCastleDistance==1) {
 			if(absoluteYCastleDistance==0||absoluteYCastleDistance==1) {
-				return true;
+				return this.karbonite > 0 || this.fuel > 0;
 			}
 		}
 		return false;
 	}
-	public boolean locateNearbyCastle(Robot me) {
-		Robot[] visibleRobots = getVisibleRobots();
-		for(int i=0;i<visibleRobots.length;i++) {
-			if(visibleRobots[i].unit==SPECS.CASTLE&&visibleRobots[i].team==me.team) {
-				castleLocation[0] = visibleRobots[i].x;
-				castleLocation[1] = visibleRobots[i].y;
+	public boolean locateNearbyCastle() {
+		HashSet<Robot> goodGuys = this.findGoodGuys();
+		Iterator<Robot> iter = goodGuys.iterator();
+		while (iter.hasNext()) {
+			Robot goodGuy = iter.next();
+			if(goodGuy.unit == SPECS.CASTLE && goodGuy.team == this.me.team) {
+				castleLocation[0] = goodGuy.x;
+				castleLocation[1] = goodGuy.y;
 				return true;
 			}
 		}
 		return false;
 	}
 	public boolean canMineKarbonite(Robot me) {
-		if(karboniteMap[me.x][me.y]==true&&me.karbonite<20) {
+		if(karboniteMap[me.y][me.x]==true&&me.karbonite<20) {
 			return true;
 		}
 		return false;
 	}
 
 	public boolean canMineFuel(Robot me) {
-		if(fuelMap[me.x][me.y]==true&&me.fuel<100) {
+		if(fuelMap[me.y][me.x]==true&&me.fuel<100) {
 			return true;
 		}
 		return false;
@@ -491,11 +495,13 @@ public class MyRobot extends BCAbstractRobot {
 		int minYCoordinate = -1;
 		for (int i = 0; i < karboniteMap.length; i++) {
 			for (int j = 0; j < karboniteMap[i].length; j++) {
-				double distance = findDistance(me, i, j);
-				if (distance < minDistance) {
-					minDistance = distance;
-					minXCoordinate = i;
-					minYCoordinate = j;
+				if (karboniteMap[i][j]) {
+					double distance = findDistance(me, i, j);
+					if (distance < minDistance) {
+						minDistance = distance;
+						minXCoordinate = j;
+						minYCoordinate = i;
+					}
 				}
 			}
 		}
@@ -511,11 +517,13 @@ public class MyRobot extends BCAbstractRobot {
 		int minYCoordinate = -1;
 		for (int i = 0; i < fuelMap.length; i++) {
 			for (int j = 0; j < fuelMap[i].length; j++) {
-				double distance = findDistance(me, i, j);
-				if (distance < minDistance) {
-					minDistance = distance;
-					minXCoordinate = i;
-					minYCoordinate = j;
+				if (fuelMap[i][j]) {
+					double distance = findDistance(me, i, j);
+					if (distance < minDistance) {
+						minDistance = distance;
+						minXCoordinate = j;
+						minYCoordinate = i;
+					}
 				}
 			}
 		}
@@ -524,12 +532,13 @@ public class MyRobot extends BCAbstractRobot {
 		location[1] = minYCoordinate;
 		return location;
 	}
-	
+
 	public Action makeUnit(int type) {
 		int[] spot = this.checkAdjacentPassable();
 		return this.buildUnit(type, spot[0] - this.me.x, spot[1] - this.me.y);
 	}
 
+	//Pilgrims run away when they see dangerous enemies
 	public Action pilgrimRunAway() {
 		HashSet<Robot> nearbyEnemies = this.findBadGuys();
 		Robot closestEnemy = this.findClosestThreat(nearbyEnemies);
@@ -539,6 +548,7 @@ public class MyRobot extends BCAbstractRobot {
 		return this.move(x, y); //replace with our move/pathing method later
 	}
 
+	//Finds all enemy robots in vision range
 	public HashSet<Robot> findBadGuys() {
 		HashSet<Robot> theBadGuys = new HashSet<Robot>();
 		Robot[] visibleBots = getVisibleRobots();
@@ -548,6 +558,18 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return theBadGuys;
+	}
+
+	//Finds all ally robots in vision range
+	public HashSet<Robot> findGoodGuys() {
+		HashSet<Robot> theGoodGuys = new HashSet<Robot>();
+		Robot[] visibleBots = getVisibleRobots();
+		for (int i = 0; i < visibleBots.length; i++) {
+			if (me.team == visibleBots[i].team) {
+				theGoodGuys.add(visibleBots[i]);
+			}
+		}
+		return theGoodGuys;
 	}
 
 	public Robot findPrimaryEnemyHealth(HashSet<Robot> potentialEnemies) {
