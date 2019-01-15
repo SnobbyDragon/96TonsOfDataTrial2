@@ -149,9 +149,9 @@ public class MyRobot extends BCAbstractRobot {
 				this.crusaderTarget[0] = this.mapXSize/4;
 				this.crusaderTarget[1] = this.mapYSize/4;
 			}
-			if(fuel>=10) {
+			if (fuel >= 10) {
 				HashSet<Robot> enemies = findBadGuys();
-				if (enemies.size() == 0 && this.fuel > 100) {
+				if (enemies.size() == 0 && this.fuel > 300) {
 					return pathFind(crusaderTarget);
 				}
 //				log("Enemies size: "+enemies.size());
