@@ -20,7 +20,8 @@ public class MyRobot extends BCAbstractRobot {
 	public int[] castleLocation = new int[2];
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>();
 	public int[] crusaderTarget = new int[2];
-	public boolean fuelCrisis = false;
+	public boolean crusadeMode = false;
+	public int crusadeTurns = 0;
 
 	public Action turn() {
 		turn++;
@@ -45,7 +46,10 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		visibleRobotMap = this.getVisibleRobotMap(); //get visible robots every turn
 		if (bots.get("crusaders") >= 7) {
-			this.fuelCrisis = true;
+			this.crusadeMode = true;
+		}
+		if (this.crusadeMode) {
+			this.crusadeTurns++;
 		}
 		if (me.unit == SPECS.CASTLE) { //castle
 			if (bots.get("pilgrims") < 5) { //build 5 pilgrims
@@ -103,7 +107,7 @@ public class MyRobot extends BCAbstractRobot {
 				int[] closestKarbonite = searchForKarboniteLocation();
 				int[] closestFuel = searchForFuelLocation();
 				//this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-				if (fuelCrisis || findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
+				if (crusadeMode || findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
 					return pathFind(closestFuel);
 				}
 				else {
@@ -112,6 +116,39 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
+			//move crusade target every 100 turns
+			if (this.crusadeTurns == 100) { //up
+				this.crusaderTarget[0] = this.mapXSize/2;
+				this.crusaderTarget[1] = this.mapYSize/4;
+			}
+			else if (this.crusadeTurns == 200) { //up right
+				this.crusaderTarget[0] = this.mapXSize*3/4;
+				this.crusaderTarget[1] = this.mapYSize/4;
+			}
+			else if (this.crusadeTurns == 300) { //right
+				this.crusaderTarget[0] = this.mapXSize*3/4;
+				this.crusaderTarget[1] = this.mapYSize/2;
+			}
+			else if (this.crusadeTurns == 400) { //down right
+				this.crusaderTarget[0] = this.mapXSize*3/4;
+				this.crusaderTarget[1] = this.mapYSize*3/4;
+			}
+			else if (this.crusadeTurns == 500) { //down
+				this.crusaderTarget[0] = this.mapXSize/2;
+				this.crusaderTarget[1] = this.mapYSize*3/4;
+			}
+			else if (this.crusadeTurns == 600) { //down left
+				this.crusaderTarget[0] = this.mapXSize/4;
+				this.crusaderTarget[1] = this.mapYSize*3/4;
+			}
+			else if (this.crusadeTurns == 700) { //left
+				this.crusaderTarget[0] = this.mapXSize/4;
+				this.crusaderTarget[1] = this.mapYSize/2;
+			}
+			else if (this.crusadeTurns == 800) { //up left
+				this.crusaderTarget[0] = this.mapXSize/4;
+				this.crusaderTarget[1] = this.mapYSize/4;
+			}
 			if(fuel>=10) {
 				HashSet<Robot> enemies = findBadGuys();
 				if (enemies.size() == 0 && this.fuel > 100) {
@@ -159,7 +196,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (this.haveCastle && this.isAdjacentToCastle()) { //get out of the way
 				
 			}
-			if (fuel>=15) {
+			if (fuel >= 15) {
 				HashSet<Robot> enemies = findBadGuys();
 				Robot targetBadGuy = findPrimaryEnemyHealth(enemies);
 				try {
