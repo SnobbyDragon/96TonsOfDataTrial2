@@ -165,6 +165,7 @@ public class MyRobot extends BCAbstractRobot {
 				Robot closeBadGuy=findBadGuy(me,enemies);
 				try {
 					log("Bad guy's health: "+closeBadGuy.health);
+					log("Other bad guy data "+closeBadGuy.x);
 					return attack(closeBadGuy.x-me.x,closeBadGuy.y-me.y);
 				} catch (Exception e) {
 					log("Can't attack the man");
