@@ -46,6 +46,11 @@ public class MyRobot extends BCAbstractRobot {
 			castleNum = 0;
 		}
 			if (me.unit == SPECS.CASTLE) {
+				if (this.canBuild(SPECS.CRUSADER)) {
+					log("built crusader");
+					bots.put("crusaders", bots.get("crusaders") + 1);
+					return this.makeUnit(SPECS.CRUSADER);
+				/*
 				log("karb: " + karbonite + " fuel: " + fuel);
 				log("pilgrim number: " + bots.get("pilgrims"));
 				if (turn ==1)
@@ -74,6 +79,8 @@ public class MyRobot extends BCAbstractRobot {
 						return this.makeUnit(SPECS.PREACHER);
 					}
 				log("didnt build anything");
+				*/
+			}
 			}
 		if (me.unit == SPECS.PILGRIM) {
 			if (me.health <= 0)
@@ -109,46 +116,36 @@ public class MyRobot extends BCAbstractRobot {
 					return pathFind(me,karboniteLocationFind);
 				}
 			}
-			/*if(canMineFuel(me)||canMineKarbonite(me)) {
-				return mine();
-			}
-			if (!haveCastle) {
-				if(locateNearbyCastle(me)) {
-					haveCastle=true;
-				}
-				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
-			}
-			if(canGiveStuff(me)) {
-				int xCastle=castleLocation[0]-me.x;
-				int yCastle=castleLocation[1]-me.y;
-				return give(xCastle,yCastle,me.karbonite,me.fuel);
-			}
-			if(me.karbonite==20||me.fuel==100) {
-				return pathFind(me,castleLocation);
-			} else {
-				int[] closestKarbonite=searchForKarboniteLocation();
-				int[] closestFuel=searchForFuelLocation();
-				if(findDistance(me,closestKarbonite[0],closestKarbonite[1])>=findDistance(me,closestFuel[0],closestFuel[1])) {
-					return pathFind(me,closestFuel);
-				} else {
-					return pathFind(me,closestKarbonite);
-				}
-				
-				
-			}*/
+			//log("Did nothing");
+			//return null;
 		}
 		
 		
 		if (me.unit == SPECS.CRUSADER) {
+			log("im a crusader");
 			if (me.health <= 0)
 			{
 				bots.put("crusaders", bots.get("crusaders") - 1);
 			}
-			Robot enemy = this.findPrimaryEnemyType(this.findBadGuys());
-			this.attack(enemy.x, enemy.y);
+				HashSet<Robot> enemies = this.findBadGuys();
+				log(enemies.toString());
+			if (!enemies.isEmpty()) {
+				Robot enemy = this.findPrimaryEnemyTypeHealth(enemies);
+				log("attacked enemy");
+				return attack(enemy.x - this.me.x, enemy.y - this.me.y);
+			}
+			if (!haveCastle) { //finds castle upon spawn
+				if(locateNearbyCastle()) {
+					haveCastle = true;
+				}
+				//moves away from castle on spawn
+				if (this.findDistance(this.me, this.castleLocation[0], this.castleLocation[1]) == 1) {
+					return this.move(this.me.x - this.castleLocation[0], this.me.y - this.castleLocation[1]);
+				}
+			}
+			return null;
 		}
-		
-		
+	
 		
 		if(me.unit == SPECS.PREACHER)
 		{
@@ -167,8 +164,32 @@ public class MyRobot extends BCAbstractRobot {
 				e.printStackTrace();
 			}
 		}
-	return null;
-}
+			return null;
+	}
+
+	public boolean locateNearbyCastle() {
+		HashSet<Robot> goodGuys = this.findGoodGuys();
+		Iterator<Robot> iter = goodGuys.iterator();
+		while (iter.hasNext()) {
+			Robot goodGuy = iter.next();
+			if(goodGuy.unit == SPECS.CASTLE && goodGuy.team == this.me.team) {
+				castleLocation[0] = goodGuy.x;
+				castleLocation[1] = goodGuy.y;
+				return true;
+			}
+		}
+		return false;
+	}
+	public HashSet<Robot> findGoodGuys() {
+		HashSet<Robot> theGoodGuys = new HashSet<Robot>();
+		Robot[] visibleBots = getVisibleRobots();
+		for (int i = 0; i < visibleBots.length; i++) {
+			if (me.team == visibleBots[i].team) {
+				theGoodGuys.add(visibleBots[i]);
+			}
+		}
+		return theGoodGuys;
+	}
 
 	public boolean canGiveStuff(Robot me) {
 		int absoluteXCastleDistance=Math.abs(castleLocation[0]-me.x);
@@ -428,6 +449,25 @@ public class MyRobot extends BCAbstractRobot {
 		return alreadyOccupied;
 	}
 
+	public Robot findPrimaryEnemyTypeHealth(HashSet<Robot> potentialEnemies) {
+		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
+		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PREACHER));
+		}
+		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CRUSADER));
+		}
+		if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PILGRIM));
+		}
+		if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CASTLE));
+		}
+		if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
+			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CHURCH));
+		}
+		return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PROPHET));
+	}
 	
 	public int[] checkAdjacentPassable() {
 		int x = this.me.x;
