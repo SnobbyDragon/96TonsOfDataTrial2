@@ -85,18 +85,23 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (me.unit == SPECS.PILGRIM) {
 			log("I am a pilgrim");
-		//	log("My karbonite: "+me.karbonite);
-		//	log("My fuel: "+me.fuel);
-		//	log("Have Castle: "+haveCastle);
-		//	log("My Castle X: "+castleLocation[0]);
-		//	log("My Castle Y: "+castleLocation[1]);
+			log("My karbonite: "+me.karbonite);
+			log("My fuel: "+me.fuel);
+			log("Have Castle: "+haveCastle);
+			log("My Castle X: "+castleLocation[0]);
+			log("My Castle Y: "+castleLocation[1]);
+			log("My X position: "+me.x);
+			log("My Y position: "+me.y);
 			if(!haveCastle) {
 				if(locateNearbyCastle(me)) {
 					haveCastle=true;
 				}
 			}
 			int[] karboniteLocationFind=searchForKarboniteLocation();
-			int[] fuelLocationFind=searchForFuelLocation();
+			log("Karbonite X: "+karboniteLocationFind[0]);
+			log("Karbonite Y: "+karboniteLocationFind[1]);
+			return pathFind(me,karboniteLocationFind);
+			/*int[] fuelLocationFind=searchForFuelLocation();
 			if(canMineKarbonite(me)||canMineFuel(me)) {
 				return mine();
 			}
@@ -113,7 +118,7 @@ public class MyRobot extends BCAbstractRobot {
 				//} else {
 			return pathFind(me,karboniteLocationFind);
 				//}
-			}
+			}*/
 			/*if(canMineFuel(me)||canMineKarbonite(me)) {
 				return mine();
 			}
@@ -143,7 +148,7 @@ public class MyRobot extends BCAbstractRobot {
 			}*/
 		}
 		if(me.unit==SPECS.PREACHER) {
-			log("I am a preacher");
+			/*log("I am a preacher");
 			if (fuel>=15) {
 				HashSet<Robot> enemies=findBadGuys();
 				Robot targetBadGuy=findPrimaryEnemyHealth(enemies);
@@ -152,9 +157,9 @@ public class MyRobot extends BCAbstractRobot {
 				} catch (Exception e) {
 					
 				}
-			}
+			}*/
 		}
-		if(me.unit==SPECS.CRUSADER) {
+		/*if(me.unit==SPECS.CRUSADER) {
 			log("I am a crusader");
 			if(fuel>=10) {
 				HashSet<Robot> enemies=findBadGuys();
@@ -181,7 +186,7 @@ public class MyRobot extends BCAbstractRobot {
 					}
 				}
 			}
-		}
+		}*/
 		//Crusader pseudocode: Looks for badGuys, if sees none, pathFind to the center of the Map
 		//If see some, attack if possible, otherwise pathfind
 		log("Did nothing");
