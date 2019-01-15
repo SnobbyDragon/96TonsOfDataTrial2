@@ -43,6 +43,7 @@ public class MyRobot extends BCAbstractRobot {
 			center[1]=31;
 		}
 		if (me.unit == SPECS.CASTLE) {
+			log("I am a castle");
 			if(turn==1) {
 				botCounts[0]=0;
 				botCounts[1]=0;
@@ -83,6 +84,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		if (me.unit == SPECS.PILGRIM) {
+			log("I am a pilgrim");
 		//	log("My karbonite: "+me.karbonite);
 		//	log("My fuel: "+me.fuel);
 		//	log("Have Castle: "+haveCastle);
@@ -106,11 +108,11 @@ public class MyRobot extends BCAbstractRobot {
 			if(me.karbonite==20||me.fuel==100) {
 				return pathFind(me,castleLocation);
 			} else {
-				if(findDistance(me,karboniteLocationFind[0],karboniteLocationFind[1])>=findDistance(me,fuelLocationFind[0],fuelLocationFind[1])) {
-					return pathFind(me,fuelLocationFind);
-				} else {
-					return pathFind(me,karboniteLocationFind);
-				}
+				//if(findDistance(me,karboniteLocationFind[0],karboniteLocationFind[1])>=findDistance(me,fuelLocationFind[0],fuelLocationFind[1])) {
+				//	return pathFind(me,fuelLocationFind);
+				//} else {
+			return pathFind(me,karboniteLocationFind);
+				//}
 			}
 			/*if(canMineFuel(me)||canMineKarbonite(me)) {
 				return mine();
@@ -141,6 +143,7 @@ public class MyRobot extends BCAbstractRobot {
 			}*/
 		}
 		if(me.unit==SPECS.PREACHER) {
+			log("I am a preacher");
 			if (fuel>=15) {
 				HashSet<Robot> enemies=findBadGuys();
 				Robot targetBadGuy=findPrimaryEnemyHealth(enemies);
@@ -152,19 +155,29 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if(me.unit==SPECS.CRUSADER) {
+			log("I am a crusader");
 			if(fuel>=10) {
 				HashSet<Robot> enemies=findBadGuys();
 				if(enemies.size()==0) {
 					return pathFind(me,center);
 				}
-				Robot targetBadGuy=findPrimaryEnemyHealth(enemies);
+				log("Enemies size: "+enemies.size());
+				Robot closeBadGuy=findBadGuy(me,enemies);
 				try {
-					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
+					log("Bad guy's health: "+closeBadGuy.health);
+					return attack(closeBadGuy.x-me.x,closeBadGuy.y-me.y);
 				} catch (Exception e) {
-					int[] targetBadGuyLocation=new int[2];
-					targetBadGuyLocation[0]=targetBadGuy.x;
-					targetBadGuyLocation[1]=targetBadGuy.y;
-					
+					log("Can't attack the man");
+					try {
+						int[] closeBadGuyLocation=new int[2];
+						closeBadGuyLocation[0]=closeBadGuy.x;
+						closeBadGuyLocation[1]=closeBadGuy.y;
+						log("X coor bad: "+closeBadGuyLocation[0]);
+						log("Y coor bad: "+closeBadGuyLocation[1]);
+						return pathFind(me,closeBadGuyLocation);
+					} catch (Exception ef) {
+						log("Can find the man");
+					}
 				}
 			}
 		}
@@ -174,6 +187,32 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 
 	}
+	
+	public Robot findBadGuy(Robot me,HashSet<Robot> potentialEnemies) {
+		double distance=Double.MAX_VALUE;
+		Robot closeBot=null;
+		Iterator<Robot> badGuyIter=potentialEnemies.iterator();
+		while(badGuyIter.hasNext()) {
+			Robot aBadGuy=badGuyIter.next();
+			double badGuyDistance=findDistance(me,aBadGuy);
+			log("Distance: "+badGuyDistance);
+			if(badGuyDistance<distance) {
+				log("Found closer robot");
+				distance=badGuyDistance;
+				log("New closest distance: "+distance);
+				closeBot=aBadGuy;
+			}
+			
+		}
+		if(closeBot==null) {
+			log("Still null boo");
+		} else {
+			log("You the man");
+		}
+		return closeBot;
+	}
+	
+	
 	
 	public boolean canGiveStuff(Robot me) {
 		int absoluteXCastleDistance=Math.abs(castleLocation[0]-me.x);
@@ -769,12 +808,10 @@ public class MyRobot extends BCAbstractRobot {
 		while (iter.hasNext()) {
 			Robot badGuy = iter.next();
 			double distance = findDistance(me, badGuy);
-			if (canAttack(distance)) {
 				if (closestDistance > distance) {
 					closestDistance = distance;
 					closestBot = badGuy;
 				}
-			}
 		}
 		return closestBot;
 	}
