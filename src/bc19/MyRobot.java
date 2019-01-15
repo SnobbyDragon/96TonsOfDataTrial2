@@ -53,7 +53,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 		}
 		if (me.unit == SPECS.PILGRIM) {
-			if (canMineFuel(me)||canMineKarbonite(me)) {
+			if (canMineFuel()||canMineKarbonite()) {
 				this.log("mining");
 				return mine();
 			}
@@ -64,7 +64,7 @@ public class MyRobot extends BCAbstractRobot {
 				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
 			if (haveCastle&&canGiveStuff()) {
-				this.log("giving to castle, karbo=" + this.karbonite + " fuel=" + this.fuel);
+				this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
 				int xCastle=castleLocation[0]-this.me.x;
 				int yCastle=castleLocation[1]-this.me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
@@ -105,7 +105,7 @@ public class MyRobot extends BCAbstractRobot {
 		int absoluteYCastleDistance=Math.abs(castleLocation[1]-this.me.y);
 		if(absoluteXCastleDistance==0||absoluteXCastleDistance==1) {
 			if(absoluteYCastleDistance==0||absoluteYCastleDistance==1) {
-				return this.karbonite > 0 || this.fuel > 0;
+				return this.me.karbonite > 0 || this.me.fuel > 0;
 			}
 		}
 		return false;
@@ -123,18 +123,12 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return false;
 	}
-	public boolean canMineKarbonite(Robot me) {
-		if(karboniteMap[me.y][me.x]==true&&me.karbonite<20) {
-			return true;
-		}
-		return false;
+	public boolean canMineKarbonite() {
+		return karboniteMap[me.y][me.x] && me.karbonite<20;
 	}
 
-	public boolean canMineFuel(Robot me) {
-		if(fuelMap[me.y][me.x]==true&&me.fuel<100) {
-			return true;
-		}
-		return false;
+	public boolean canMineFuel() {
+		return fuelMap[me.y][me.x] && me.fuel<100;
 	}
 
 	public MoveAction pathFind(Robot me, int[] finalLocation) {
