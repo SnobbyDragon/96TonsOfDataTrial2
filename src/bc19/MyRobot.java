@@ -9,8 +9,8 @@ import java.util.Iterator;
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 	public int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
-	public boolean[][] passableMap = getPassableMap();
-	public int[][] visibleRobotMap = getVisibleRobotMap();
+	public boolean[][] passableMap;
+	public int[][] visibleRobotMap;
 	public boolean[][] karboniteMap = getKarboniteMap();
 	public boolean[][] fuelMap = getFuelMap();
 	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
@@ -24,31 +24,34 @@ public class MyRobot extends BCAbstractRobot {
 		turn++;
 		if (turn == 1)
 		{
+			passableMap = getPassableMap();
+			visibleRobotMap = getVisibleRobotMap();
 			bots.put("pilgrims", 0);
 			bots.put("crusaders", 0);
 			bots.put("preachers", 0);
 		}
+		this.log(this.karboniteMap.length + "");
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
 				castleNum++;
 				if (bots.get("pilgrims") != 5 + castleNum) {
 					if (this.canBuild(SPECS.PILGRIM))  {
-						log("built pilgrim");
+						log("built pilgrim at " + this.checkAdjacentPassable()[1] + " " + this.checkAdjacentPassable()[0] + "\ncastle at " + this.me.x + " " + this.me.y);
 						bots.put("pilgrims", bots.get("pilgrims") + 1);
-						return this.makePilgrims();
+						return this.makeUnit(SPECS.PILGRIM);
 					}
 				}
 				if (bots.get("crusaders") != 10 + castleNum*2)
 					if (this.canBuild(SPECS.CRUSADER)) {
 						log("built crusader");
 						bots.put("crusaders", bots.get("crusaders") + 1);
-						return this.makeCrusaders();
+						return this.makeUnit(SPECS.CRUSADER);
 					}
 				if (bots.get("preachers") != castleNum*3)
 					if(this.canBuild(SPECS.PREACHER)) {
 						log("built preacher");
 						bots.put("preachers", bots.get("preachers") + 1);
-						return this.makePreachers();
+						return this.makeUnit(SPECS.PREACHER);
 					}
 			}
 		}
@@ -442,40 +445,40 @@ public class MyRobot extends BCAbstractRobot {
 		int y = this.me.y;
 		if (x > 0) { //can check left
 			if (y > 0) { //can check up
-				if (this.map[y-1][x-1]) { //checks up left
+				if (this.passableMap[y-1][x-1]) { //checks up left
 					return new int[]{x-1, y-1};
 				}
 			}
-			if (this.map[y][x-1]) { //checks middle left
+			if (this.passableMap[y][x-1]) { //checks middle left
 				return new int[]{x-1, y};
 			}
-			if (y < this.map.length - 1) { //can check down
-				if (this.map[y+1][x-1]) { //checks down left
+			if (y < this.passableMap.length - 1) { //can check down
+				if (this.passableMap[y+1][x-1]) { //checks down left
 					return new int[]{x-1, y+1};
 				}
 			}
 		}
 		if (y > 0) { //can check up
-			if (this.map[y-1][x]) { //checks middle up
+			if (this.passableMap[y-1][x]) { //checks middle up
 				return new int[]{x, y-1};
 			}
 		}
-		if (y < this.map.length - 1) { //can check down
-			if (this.map[y+1][x]) { //checks middle down
+		if (y < this.passableMap.length - 1) { //can check down
+			if (this.passableMap[y+1][x]) { //checks middle down
 				return new int[]{x, y+1};
 			}
 		}
-		if (x < this.map[0].length - 1) { //can check right
+		if (x < this.passableMap[0].length - 1) { //can check right
 			if (y > 0) { //can check up
-				if (this.map[y-1][x+1]) { //checks up right
+				if (this.passableMap[y-1][x+1]) { //checks up right
 					return new int[]{x+1, y-1};
 				}
 			}
-			if (this.map[y][x+1]) { //checks middle right
+			if (this.passableMap[y][x+1]) { //checks middle right
 				return new int[]{x+1, y};
 			}
-			if (y < this.map.length - 1) { //can check down
-				if (this.map[y+1][x+1]) { //checks down right
+			if (y < this.passableMap.length - 1) { //can check down
+				if (this.passableMap[y+1][x+1]) { //checks down right
 					return new int[]{x+1, y+1};
 				}
 			}
@@ -522,20 +525,10 @@ public class MyRobot extends BCAbstractRobot {
 		location[1] = minYCoordinate;
 		return location;
 	}
-
-	public Action makePilgrims() {
-		int[] spot = checkAdjacentPassable();
-		return buildUnit(SPECS.PILGRIM, spot[0], spot[1]);
-	}
-
-	public Action makeCrusaders() {
-		int[] spot = checkAdjacentPassable();
-		return buildUnit(SPECS.CRUSADER, spot[0], spot[1]);
-	}
-
-	public Action makePreachers() {
-		int[] spot = checkAdjacentPassable();
-		return buildUnit(SPECS.PREACHER, spot[0], spot[1]);
+	
+	public Action makeUnit(int type) {
+		int[] spot = this.checkAdjacentPassable();
+		return this.buildUnit(type, spot[0], spot[1]);
 	}
 
 	public Action pilgrimRunAway() {
@@ -656,9 +649,9 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 	}
-	
-	public boolean canBuild(int unitID) {
-		return this.fuel >= SPECS.UNITS[unitID].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[unitID].CONSTRUCTION_KARBONITE && this.checkAdjacentPassable()!=null;
+
+	public boolean canBuild(int type) {
+		return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentPassable()!=null;
 	}
 
 	public int getMovementRangeRadius() {
