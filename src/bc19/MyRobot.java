@@ -19,7 +19,8 @@ public class MyRobot extends BCAbstractRobot {
 	public boolean haveCastle = false;
 	public int[] castleLocation = new int[2];
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>();
-	public int[] center = new int[2];
+	public int[] crusaderTarget = new int[2];
+	public boolean fuelCrisis = false;
 
 	public Action turn() {
 		turn++;
@@ -31,9 +32,9 @@ public class MyRobot extends BCAbstractRobot {
 			fuelMap = getFuelMap();
 			mapYSize = passableMap.length;
 			mapXSize = passableMap[0].length;
-			//finds center of map
-			center[0] = mapXSize/2;
-			center[1] = mapYSize/2;
+			//first target center of the map
+			crusaderTarget[0] = mapXSize/2;
+			crusaderTarget[1] = mapYSize/2;
 
 			//records number of robots
 			bots.put("pilgrims", 0);
@@ -43,6 +44,9 @@ public class MyRobot extends BCAbstractRobot {
 			//this.logMap(this.karboniteMap);
 		}
 		visibleRobotMap = this.getVisibleRobotMap(); //get visible robots every turn
+		if (bots.get("crusaders") >= 7) {
+			this.fuelCrisis = true;
+		}
 		if (me.unit == SPECS.CASTLE) { //castle
 			if (bots.get("pilgrims") < 5) { //build 5 pilgrims
 				if (this.canBuild(SPECS.PILGRIM))  {
@@ -58,7 +62,7 @@ public class MyRobot extends BCAbstractRobot {
 					return this.makeUnit(SPECS.PREACHER);
 				}
 			}
-			if (bots.get("preachers") == 3) { //build infinite crusaders
+			if (bots.get("preachers") == 3 && (turn >= 100 || this.karbonite >= 50)) { //build infinite crusaders
 				if (this.canBuild(SPECS.CRUSADER)) {
 					log("built crusader");
 					bots.put("crusaders", bots.get("crusaders") + 1);
@@ -99,7 +103,7 @@ public class MyRobot extends BCAbstractRobot {
 				int[] closestKarbonite = searchForKarboniteLocation();
 				int[] closestFuel = searchForFuelLocation();
 				//this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-				if (findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
+				if (fuelCrisis || findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
 					return pathFind(closestFuel);
 				}
 				else {
@@ -109,9 +113,9 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
 			if(fuel>=10) {
-				HashSet<Robot> enemies=findBadGuys();
-				if(enemies.size()==0) {
-					return pathFind(center);
+				HashSet<Robot> enemies = findBadGuys();
+				if (enemies.size() == 0 && this.fuel > 100) {
+					return pathFind(crusaderTarget);
 				}
 				log("Enemies size: "+enemies.size());
 				Robot closeBadGuy = findBadGuy(enemies);
@@ -133,22 +137,28 @@ public class MyRobot extends BCAbstractRobot {
 					}
 				}
 			}
-			HashSet<Robot> enemies = this.findBadGuys();
-			if (!enemies.isEmpty()) {
-				Robot enemy = this.findPrimaryEnemyTypeHealth(enemies);
-				return attack(enemy.x - this.me.x, enemy.y - this.me.y);
-			}
-			if (!haveCastle) { //finds castle upon spawn
-				if(locateNearbyCastle()) {
-					haveCastle = true;
-				}
-				//moves away from castle on spawn
-				if (this.findDistance(this.me, this.castleLocation[0], this.castleLocation[1]) == 1) {
-					return this.move(this.me.x - this.castleLocation[0], this.me.y - this.castleLocation[1]);
-				}
-			}
+//			HashSet<Robot> enemies = this.findBadGuys();
+//			if (!enemies.isEmpty()) {
+//				Robot enemy = this.findPrimaryEnemyTypeHealth(enemies);
+//				return attack(enemy.x - this.me.x, enemy.y - this.me.y);
+//			}
+//			if (!haveCastle) { //finds castle upon spawn
+//				if(locateNearbyCastle()) {
+//					haveCastle = true;
+//				}
+//				//moves away from castle on spawn
+//				if (this.findDistance(this.me, this.castleLocation[0], this.castleLocation[1]) == 1) {
+//					return this.move(this.me.x - this.castleLocation[0], this.me.y - this.castleLocation[1]);
+//				}
+//			}
 		}
 		if(me.unit==SPECS.PREACHER) { //preacher
+			if (!this.haveCastle) {
+				this.locateNearbyCastle();
+			}
+			if (this.haveCastle && this.isAdjacentToCastle()) { //get out of the way
+				
+			}
 			if (fuel>=15) {
 				HashSet<Robot> enemies = findBadGuys();
 				Robot targetBadGuy = findPrimaryEnemyHealth(enemies);
@@ -507,6 +517,13 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return alreadyOccupied;
 	}
+	
+	//is this unit next to a castle?
+	public boolean isAdjacentToCastle() {
+		int x = this.me.x;
+		int y = this.me.y;
+		return Math.abs(x-this.castleLocation[0])==1 && Math.abs(y-this.castleLocation[1])==1;
+	}
 
 	public int[] checkAdjacentAvailable() {
 		int x = this.me.x;
@@ -554,6 +571,7 @@ public class MyRobot extends BCAbstractRobot {
 		return null; //surrounded by impassable terrain
 	}
 
+	
 	public int[] searchForKarboniteLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
