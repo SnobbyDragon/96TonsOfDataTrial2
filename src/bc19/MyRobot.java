@@ -63,13 +63,13 @@ public class MyRobot extends BCAbstractRobot {
 				}
 				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
-			if (haveCastle&&canGiveStuff()) {
+			if (haveCastle && canGiveStuff()) {
 				this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
 				int xCastle=castleLocation[0]-this.me.x;
 				int yCastle=castleLocation[1]-this.me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
-			if (haveCastle&&(me.karbonite==20||me.fuel==100)) {
+			if (haveCastle && (me.karbonite==20||me.fuel==100)) {
 				this.log("returning to castle");
 				return pathFind(me,castleLocation);
 			}
@@ -89,9 +89,13 @@ public class MyRobot extends BCAbstractRobot {
 			HashSet<Robot> enemies = this.findBadGuys();
 			if (!enemies.isEmpty()) {
 				Robot enemy = this.findPrimaryEnemyTypeHealth(enemies);
-				return attack(enemy.x, enemy.y);
+				return attack(enemy.x - this.me.x, enemy.y - this.me.y);
 			}
-			if (locateNearbyCastle()) {
+			if (!haveCastle) { //finds castle upon spawn
+				if(locateNearbyCastle()) {
+					haveCastle = true;
+				}
+				//moves away from castle on spawn
 				if (this.findDistance(this.me, this.castleLocation[0], this.castleLocation[1]) == 1) {
 					return this.move(this.me.x - this.castleLocation[0], this.me.y - this.castleLocation[1]);
 				}
