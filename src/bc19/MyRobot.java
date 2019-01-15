@@ -61,52 +61,51 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			if (bots.get("preachers") < 3) { //build 3 preachers
 				if (this.canBuild(SPECS.PREACHER)) {
-					log("built preacher");
+//					log("built preacher");
 					bots.put("preachers", bots.get("preachers") + 1);
 					return this.makeUnit(SPECS.PREACHER);
 				}
 			}
 			if (bots.get("preachers") == 3 && (turn >= 100 || this.karbonite >= 50)) { //build infinite crusaders
 				if (this.canBuild(SPECS.CRUSADER)) {
-					log("built crusader");
+//					log("built crusader");
 					bots.put("crusaders", bots.get("crusaders") + 1);
 					return this.makeUnit(SPECS.CRUSADER);
 				}
 			}
 		}
 		if (me.unit == SPECS.PILGRIM) { //pilgrim
-			log("I am a pilgrim");
-			log("My karbonite: "+me.karbonite);
-			log("My fuel: "+me.fuel);
-			log("Have Castle: "+haveCastle);
-			log("My Castle X: "+castleLocation[0]);
-			log("My Castle Y: "+castleLocation[1]);
-			log("My X position: "+me.x);
-			log("My Y position: "+me.y);
+//			log("I am a pilgrim");
+//			log("My karbonite: "+me.karbonite);
+//			log("My fuel: "+me.fuel);
+//			log("Have Castle: "+haveCastle);
+//			log("My Castle X: "+castleLocation[0]);
+//			log("My Castle Y: "+castleLocation[1]);
+//			log("My X position: "+me.x);
+//			log("My Y position: "+me.y);
 			if (canMineFuel()||canMineKarbonite()) {
-				this.log("mining");
+//				this.log("mining");
 				return mine();
 			}
 			if (!haveCastle) {
 				if(locateNearbyCastle()) {
 					haveCastle = true;
 				}
-				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
 			if (haveCastle && canGiveStuff()) {
-				//this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
+//				this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
 				int xCastle = castleLocation[0] - this.me.x;
 				int yCastle = castleLocation[1] - this.me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
 			if (haveCastle && (me.karbonite==20||me.fuel==100)) {
-				this.log("returning to castle");
+//				this.log("returning to castle");
 				return pathFind(castleLocation);
 			}
 			else {
 				int[] closestKarbonite = searchForKarboniteLocation();
 				int[] closestFuel = searchForFuelLocation();
-				//this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
+//				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
 				if (crusadeMode || findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
 					return pathFind(closestFuel);
 				}
@@ -117,6 +116,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
 			//move crusade target every 100 turns
+//			this.log(crusaderTarget[0] + " " + crusaderTarget[1]);
 			if (this.crusadeTurns == 100) { //up
 				this.crusaderTarget[0] = this.mapXSize/2;
 				this.crusaderTarget[1] = this.mapYSize/4;
@@ -154,11 +154,11 @@ public class MyRobot extends BCAbstractRobot {
 				if (enemies.size() == 0 && this.fuel > 100) {
 					return pathFind(crusaderTarget);
 				}
-				log("Enemies size: "+enemies.size());
+//				log("Enemies size: "+enemies.size());
 				Robot closeBadGuy = findBadGuy(enemies);
 				try {
-					log("Bad guy's health: " + closeBadGuy.health);
-					log("Other bad guy data " + closeBadGuy.x);
+//					log("Bad guy's health: " + closeBadGuy.health);
+//					log("Other bad guy data " + closeBadGuy.x);
 					return attack(closeBadGuy.x-me.x,closeBadGuy.y-me.y);
 				} catch (Exception e) {
 					log("Can't attack the man");
@@ -166,11 +166,11 @@ public class MyRobot extends BCAbstractRobot {
 						int[] closeBadGuyLocation=new int[2];
 						closeBadGuyLocation[0]=closeBadGuy.x;
 						closeBadGuyLocation[1]=closeBadGuy.y;
-						log("X coor bad: "+closeBadGuyLocation[0]);
-						log("Y coor bad: "+closeBadGuyLocation[1]);
+//						log("X coor bad: "+closeBadGuyLocation[0]);
+//						log("Y coor bad: "+closeBadGuyLocation[1]);
 						return pathFind(closeBadGuyLocation);
 					} catch (Exception ef) {
-						log("Can find the man");
+//						log("Can find the man");
 					}
 				}
 			}
@@ -254,9 +254,9 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	public MoveAction pathFind(int[] finalLocation) {
-		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
+//		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
 		if (fuel <= 30 || finalLocation[0]==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
-			this.log("cannot move");
+//			this.log("cannot move");
 			return null;
 		}
 		int xDistance = finalLocation[0] - me.x;
@@ -691,7 +691,7 @@ public class MyRobot extends BCAbstractRobot {
 		while(badGuyIter.hasNext()) {
 			Robot aBadGuy=badGuyIter.next();
 			double badGuyDistance=findDistance(me,aBadGuy);
-			log("Distance: "+badGuyDistance);
+//			log("Distance: "+badGuyDistance);
 			if(badGuyDistance<distance) {
 				log("Found closer robot");
 				distance=badGuyDistance;
@@ -700,11 +700,11 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			
 		}
-		if(closeBot==null) {
-			log("Still null boo");
-		} else {
-			log("You the man");
-		}
+//		if(closeBot==null) {
+//			log("Still null boo");
+//		} else {
+//			log("You the man");
+//		}
 		return closeBot;
 	}
 
