@@ -3,6 +3,7 @@ package bc19;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -17,41 +18,76 @@ public class MyRobot extends BCAbstractRobot {
 	ArrayList<Integer> previousLocations;
 	public boolean haveCastle;
 	public int[] castleLocation;
+	public int[] botCounts;
+	public int[] center;
 	public Action turn() {
 		turn++;
 		log("Global karbonite: "+karbonite);
 		log("Global fuel: "+fuel);
 		int[] firstRotationTries = { 0, -1, 1, -2, 2, -3, 3 };
-	
 		rotationTries=firstRotationTries;
-		/*passableMap = getPassableMap();
-		visibleRobotMap = getVisibleRobotMap();
-		karboniteMap=getKarboniteMap();
-		fuelMap=getFuelMap();
-		previousLocations=new ArrayList<Integer>();
-		haveCastle=false;
-		castleLocation=new int[2];*/
+		//visibleRobotMap = getVisibleRobotMap();
+
+		//previousLocations=new ArrayList<Integer>();
 		if(turn==1) {
+			passableMap = getPassableMap();
 			directions=new ArrayList<String>();
 			setDirectionsArrayList();
 			haveCastle=false;
+			karboniteMap=getKarboniteMap();
+			fuelMap=getFuelMap();
 			castleLocation=new int[2];
+			botCounts=new int[3];
+			center=new int[2];
+			center[0]=31;
+			center[1]=31;
 		}
 		if (me.unit == SPECS.CASTLE) {
-			if (turn == 1) {
-				log("Building a pilgrim.");
-				return buildUnit(SPECS.PILGRIM, 1, 0);
+			if(turn==1) {
+				botCounts[0]=0;
+				botCounts[1]=0;
+				botCounts[2]=0;
 			}
-			log("Castle X: "+me.x);
-			log("Castle Y: "+me.y);
+			log("Pilgrim count: "+botCounts[0]);
+			log("Preacher count: "+botCounts[1]);
+			log("Crusader count: "+botCounts[2]);
+			if(karbonite>=10&&fuel>=50) {
+				int pilgrimCount=botCounts[0];
+				if(botCounts[0]<6) {
+					BuildAction buildingPilgrim=makePilgrims();
+					if(buildingPilgrim!=null) {
+						botCounts[0]=pilgrimCount+1;
+						return buildingPilgrim;
+					}
+				}
+			}
+			if(karbonite>=30&&fuel>=50) {
+				int preacherCount=botCounts[1];
+				if(botCounts[1]<3) {
+					BuildAction buildingPreacher=makePreachers();
+					if(buildingPreacher!=null) {
+						botCounts[1]=preacherCount+1;
+						return buildingPreacher;
+					}
+				}
+			}
+			if(karbonite>=20&&fuel>=50) {
+				int crusaderCount=botCounts[2];
+					BuildAction buildingCrusader=makeCrusaders();
+					if(buildingCrusader!=null) {
+						botCounts[2]=crusaderCount+1;
+						return buildingCrusader;
+					}
+				
+			}
 		}
 
 		if (me.unit == SPECS.PILGRIM) {
-			log("My karbonite: "+me.karbonite);
-			log("My fuel: "+me.fuel);
-			log("Have Castle: "+haveCastle);
-			log("My Castle X: "+castleLocation[0]);
-			log("My Castle Y: "+castleLocation[1]);
+		//	log("My karbonite: "+me.karbonite);
+		//	log("My fuel: "+me.fuel);
+		//	log("Have Castle: "+haveCastle);
+		//	log("My Castle X: "+castleLocation[0]);
+		//	log("My Castle Y: "+castleLocation[1]);
 			if(!haveCastle) {
 				if(locateNearbyCastle(me)) {
 					haveCastle=true;
@@ -67,7 +103,7 @@ public class MyRobot extends BCAbstractRobot {
 				int yCastle=castleLocation[1]-me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
-			if(me.karbonite==20) {
+			if(me.karbonite==20||me.fuel==100) {
 				return pathFind(me,castleLocation);
 			} else {
 				if(findDistance(me,karboniteLocationFind[0],karboniteLocationFind[1])>=findDistance(me,fuelLocationFind[0],fuelLocationFind[1])) {
@@ -104,6 +140,36 @@ public class MyRobot extends BCAbstractRobot {
 				
 			}*/
 		}
+		if(me.unit==SPECS.PREACHER) {
+			if (fuel>=15) {
+				HashSet<Robot> enemies=findBadGuys();
+				Robot targetBadGuy=findPrimaryEnemyHealth(enemies);
+				try {
+					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
+				} catch (Exception e) {
+					
+				}
+			}
+		}
+		if(me.unit==SPECS.CRUSADER) {
+			if(fuel>=10) {
+				HashSet<Robot> enemies=findBadGuys();
+				if(enemies.size()==0) {
+					return pathFind(me,center);
+				}
+				Robot targetBadGuy=findPrimaryEnemyHealth(enemies);
+				try {
+					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
+				} catch (Exception e) {
+					int[] targetBadGuyLocation=new int[2];
+					targetBadGuyLocation[0]=targetBadGuy.x;
+					targetBadGuyLocation[1]=targetBadGuy.y;
+					
+				}
+			}
+		}
+		//Crusader pseudocode: Looks for badGuys, if sees none, pathFind to the center of the Map
+		//If see some, attack if possible, otherwise pathfind
 		log("Did nothing");
 		return null;
 
@@ -233,7 +299,7 @@ public class MyRobot extends BCAbstractRobot {
 		// locations
 		// Move, and update the previous location list
 		// Switch directions and repeat this whole process
-		log("Optimal Direction: "+optimalDirection);
+		//log("Optimal Direction: "+optimalDirection);
 		for(int i=0;i<rotationTries.length;i++) {
 			int index=(directions.indexOf(optimalDirection)+i)%8;
 			if(index==0) {
@@ -634,11 +700,11 @@ public class MyRobot extends BCAbstractRobot {
 		int[] location = new int[2];
 		location[0] = minXCoordinate;
 		location[1] = minYCoordinate;
-		log("My robot's X location: "+me.x);
-		log("My robot's Y location: "+me.y);
-		log("Karbonite X location: " +location[0]);
-		log("Karbonite Y location: "+location[1]);
-		log("Distance: "+minDistance);
+	//	log("My robot's X location: "+me.x);
+	//	log("My robot's Y location: "+me.y);
+	//	log("Karbonite X location: " +location[0]);
+	//	log("Karbonite Y location: "+location[1]);
+	//	log("Distance: "+minDistance);
 		return location;
 	}
 
@@ -661,11 +727,11 @@ public class MyRobot extends BCAbstractRobot {
 		int[] location = new int[2];
 		location[0] = minXCoordinate;
 		location[1] = minYCoordinate;
-		log("My robot's X location: "+me.x);
-		log("My robot's Y location: "+me.y);
-		log("Fuel X location: " +location[0]);
-		log("Fuel Y location: "+location[1]);
-		log("Distance: "+minDistance);
+	//	log("My robot's X location: "+me.x);
+	//	log("My robot's Y location: "+me.y);
+	//	log("Fuel X location: " +location[0]);
+	//	log("Fuel Y location: "+location[1]);
+	//	log("Distance: "+minDistance);
 		return location;
 	}
 
@@ -711,6 +777,202 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return closestBot;
+	}
+	
+	public int[] checkAdjacentPassable() {
+		int x = this.me.x;
+		int y = this.me.y;
+		if (x > 0) { //can check left
+			if (y > 0) { //can check up
+				if (this.map[y-1][x-1]) { //checks up left
+					return new int[]{x-1, y-1};
+				}
+			}
+			if (this.map[y][x-1]) { //checks middle left
+				return new int[]{x-1, y};
+			}
+			if (y < this.map.length - 1) { //can check down
+				if (this.map[y+1][x-1]) { //checks down left
+					return new int[]{x-1, y+1};
+				}
+			}
+		}
+		if (y > 0) { //can check up
+			if (this.map[y-1][x]) { //checks middle up
+				return new int[]{x, y-1};
+			}
+		}
+		if (y < this.map.length - 1) { //can check down
+			if (this.map[y+1][x]) { //checks middle down
+				return new int[]{x, y+1};
+			}
+		}
+		if (x < this.map[0].length - 1) { //can check right
+			if (y > 0) { //can check up
+				if (this.map[y-1][x+1]) { //checks up right
+					return new int[]{x+1, y-1};
+				}
+			}
+			if (this.map[y][x+1]) { //checks middle right
+				return new int[]{x+1, y};
+			}
+			if (y < this.map.length - 1) { //can check down
+				if (this.map[y+1][x+1]) { //checks down right
+					return new int[]{x+1, y+1};
+				}
+			}
+		}
+		return new int[]{x, y}; //surrounded by impassable terrain
+}
+	
+	public BuildAction makePilgrims() {
+		try {
+			return buildUnit(SPECS.PILGRIM,-1,-1);
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,-1,0);
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,-1,1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,0,-1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,0,1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,1,-1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,1,0);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PILGRIM,1,1);
+
+		} catch (Exception e) {
+			
+		}
+		return null;
+	}
+	
+	public BuildAction makePreachers() {
+		try {
+			return buildUnit(SPECS.PREACHER,-1,-1);
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,1,1);
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,-1,1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,1,-1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,0,1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,0,-1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,1,0);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.PREACHER,-1,0);
+
+		} catch (Exception e) {
+			
+		}
+		return null;
+	}
+	
+	public BuildAction makeCrusaders() {
+		try {
+			return buildUnit(SPECS.CRUSADER,-1,-1);
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,1,1);
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,-1,1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,1,-1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,0,1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,0,-1);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,1,0);
+
+		} catch (Exception e) {
+			
+		}
+		try {
+			return buildUnit(SPECS.CRUSADER,-1,0);
+
+		} catch (Exception e) {
+			
+		}
+		return null;
 	}
 
 }
