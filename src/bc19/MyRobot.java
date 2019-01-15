@@ -30,13 +30,12 @@ public class MyRobot extends BCAbstractRobot {
 			bots.put("crusaders", 0);
 			bots.put("preachers", 0);
 		}
-		this.log(this.karboniteMap.length + "");
 		if (me.unit == SPECS.CASTLE) {
 			if (turn == 1) {
 				castleNum++;
 				if (bots.get("pilgrims") != 5 + castleNum) {
 					if (this.canBuild(SPECS.PILGRIM))  {
-						log("built pilgrim at " + this.checkAdjacentPassable()[1] + " " + this.checkAdjacentPassable()[0] + "\ncastle at " + this.me.x + " " + this.me.y);
+						log("built pilgrim at x=" + this.checkAdjacentPassable()[0] + " y=" + this.checkAdjacentPassable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
 						bots.put("pilgrims", bots.get("pilgrims") + 1);
 						return this.makeUnit(SPECS.PILGRIM);
 					}
@@ -528,7 +527,7 @@ public class MyRobot extends BCAbstractRobot {
 	
 	public Action makeUnit(int type) {
 		int[] spot = this.checkAdjacentPassable();
-		return this.buildUnit(type, spot[0], spot[1]);
+		return this.buildUnit(type, spot[0] - this.me.x, spot[1] - this.me.y);
 	}
 
 	public Action pilgrimRunAway() {
