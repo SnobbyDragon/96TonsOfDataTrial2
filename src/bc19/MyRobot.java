@@ -161,7 +161,7 @@ public class MyRobot extends BCAbstractRobot {
 //					log("Other bad guy data " + closeBadGuy.x);
 					return attack(closeBadGuy.x-me.x,closeBadGuy.y-me.y);
 				} catch (Exception e) {
-					log("Can't attack the man");
+//					log("Can't attack the man");
 					try {
 						int[] closeBadGuyLocation=new int[2];
 						closeBadGuyLocation[0]=closeBadGuy.x;
@@ -693,9 +693,9 @@ public class MyRobot extends BCAbstractRobot {
 			double badGuyDistance=findDistance(me,aBadGuy);
 //			log("Distance: "+badGuyDistance);
 			if(badGuyDistance<distance) {
-				log("Found closer robot");
+//				log("Found closer robot");
 				distance=badGuyDistance;
-				log("New closest distance: "+distance);
+//				log("New closest distance: "+distance);
 				closeBot=aBadGuy;
 			}
 			
