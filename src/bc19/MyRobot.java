@@ -1,5 +1,6 @@
 package bc19;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,11 +18,10 @@ public class MyRobot extends BCAbstractRobot {
 	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
 	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
 	public boolean haveCastle = false;
-	public int[] castleLocation = new int[2];
+	public Point castleLocation = new Point();
+	public Point crusaderTarget = new Point();
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>();
-	public int[] crusaderTarget = new int[2];
 	public boolean crusadeMode = false;
-	public int crusadeTurns = 0;
 
 	public Action turn() {
 		turn++;
@@ -34,8 +34,7 @@ public class MyRobot extends BCAbstractRobot {
 			mapYSize = passableMap.length;
 			mapXSize = passableMap[0].length;
 			//first target center of the map
-			crusaderTarget[0] = mapXSize/2;
-			crusaderTarget[1] = mapYSize/2;
+			crusaderTarget.setLocation(mapXSize/2, mapYSize/2);
 
 			//records number of robots
 			bots.put("pilgrims", 0);
@@ -48,10 +47,6 @@ public class MyRobot extends BCAbstractRobot {
 		if (bots.get("crusaders") >= 7) {
 			this.crusadeMode = true;
 		}
-//		if (this.crusadeMode) {
-//			this.crusadeTurns++;
-//			this.log(this.crusaderTarget[0] + " " + this.crusaderTarget[1]);
-//		}
 		if (me.unit == SPECS.CASTLE) { //castle
 			if (bots.get("pilgrims") < 5) { //build 5 pilgrims
 				if (this.canBuild(SPECS.PILGRIM))  {
@@ -80,8 +75,8 @@ public class MyRobot extends BCAbstractRobot {
 //			log("My karbonite: "+me.karbonite);
 //			log("My fuel: "+me.fuel);
 //			log("Have Castle: "+haveCastle);
-//			log("My Castle X: "+castleLocation[0]);
-//			log("My Castle Y: "+castleLocation[1]);
+//			log("My Castle X: "+castleLocation.x);
+//			log("My Castle Y: "+castleLocation.y);
 //			log("My X position: "+me.x);
 //			log("My Y position: "+me.y);
 			if (canMineFuel()||canMineKarbonite()) {
@@ -95,8 +90,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			if (haveCastle && canGiveStuff()) {
 //				this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
-				int xCastle = castleLocation[0] - this.me.x;
-				int yCastle = castleLocation[1] - this.me.y;
+				int xCastle = castleLocation.x - this.me.x;
+				int yCastle = castleLocation.y - this.me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
 			if (haveCastle && (me.karbonite==20||me.fuel==100)) {
@@ -104,10 +99,10 @@ public class MyRobot extends BCAbstractRobot {
 				return pathFind(castleLocation);
 			}
 			else {
-				int[] closestKarbonite = searchForKarboniteLocation();
-				int[] closestFuel = searchForFuelLocation();
+				Point closestKarbonite = searchForKarboniteLocation();
+				Point closestFuel = searchForFuelLocation();
 //				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-				if (crusadeMode || findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
+				if (crusadeMode || findDistance(me,closestKarbonite.x,closestKarbonite.y) >= findDistance(me,closestFuel.x,closestFuel.y)) {
 					return pathFind(closestFuel);
 				}
 				else {
@@ -117,7 +112,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
 			//move crusade target every 30 turns
-//			this.log(crusaderTarget[0] + " " + crusaderTarget[1]);
+//			this.log(crusaderTarget.x + " " + crusaderTarget.y);
 			this.setCrusadeTarget(30);
 			if (fuel >= 10) {
 				HashSet<Robot> enemies = findBadGuys();
@@ -133,9 +128,7 @@ public class MyRobot extends BCAbstractRobot {
 				} catch (Exception e) {
 //					log("Can't attack the man");
 					try {
-						int[] closeBadGuyLocation=new int[2];
-						closeBadGuyLocation[0]=closeBadGuy.x;
-						closeBadGuyLocation[1]=closeBadGuy.y;
+						Point closeBadGuyLocation=new Point(closeBadGuy.x, closeBadGuy.y);
 //						log("X coor bad: "+closeBadGuyLocation[0]);
 //						log("Y coor bad: "+closeBadGuyLocation[1]);
 						return pathFind(closeBadGuyLocation);
@@ -154,8 +147,8 @@ public class MyRobot extends BCAbstractRobot {
 //					haveCastle = true;
 //				}
 //				//moves away from castle on spawn
-//				if (this.findDistance(this.me, this.castleLocation[0], this.castleLocation[1]) == 1) {
-//					return this.move(this.me.x - this.castleLocation[0], this.me.y - this.castleLocation[1]);
+//				if (this.findDistance(this.me, this.castleLocation.x, this.castleLocation.y) == 1) {
+//					return this.move(this.me.x - this.castleLocation.x, this.me.y - this.castleLocation.y);
 //				}
 //			}
 		}
@@ -166,7 +159,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (this.haveCastle && this.isAdjacentToCastle()) { //get out of the way
 				
 			}
-			if (fuel >= 15) {
+			if (fuel >= 15) { //TODO: optimize attack
 				HashSet<Robot> enemies = findBadGuys();
 				Robot targetBadGuy = findPrimaryEnemyHealth(enemies);
 				try {
@@ -193,45 +186,57 @@ public class MyRobot extends BCAbstractRobot {
 	//TODO update this
 	public void setCrusadeTarget(int interval) {
 //		this.log(this.crusadeTurns + "");
-		if (this.turn == interval) { //up
+		if (this.turn == interval) { //checks reflective horizontal
+			this.crusaderTarget.x = this.mapXSize - this.me.x;
+			this.crusaderTarget.y = this.me.y;
+		}
+		else if (this.turn == 2*interval) { //checks reflective vertical
+			this.crusaderTarget.x = this.me.x;
+			this.crusaderTarget.y = this.mapYSize - this.me.y;
+		}
+		else if (this.turn == 3*interval) { //checks reflective both (diagonal)
+			this.crusaderTarget.x = this.mapXSize - this.me.x;
+			this.crusaderTarget.y = this.mapYSize - this.me.y;
+		}
+		else if (this.turn == 4*interval) { //up
 //			this.log("up crusade target");
-			this.crusaderTarget[0] = this.mapXSize/2;
-			this.crusaderTarget[1] = this.mapYSize/4;
+			this.crusaderTarget.x = this.mapXSize/2;
+			this.crusaderTarget.y = this.mapYSize/4;
 		}
-		else if (this.turn == 2*interval) { //up right
-			this.crusaderTarget[0] = this.mapXSize*3/4;
-			this.crusaderTarget[1] = this.mapYSize/4;
+		else if (this.turn == 5*interval) { //up right
+			this.crusaderTarget.x = this.mapXSize*3/4;
+			this.crusaderTarget.y = this.mapYSize/4;
 		}
-		else if (this.turn == 3*interval) { //right
-			this.crusaderTarget[0] = this.mapXSize*3/4;
-			this.crusaderTarget[1] = this.mapYSize/2;
+		else if (this.turn == 6*interval) { //right
+			this.crusaderTarget.x = this.mapXSize*3/4;
+			this.crusaderTarget.y = this.mapYSize/2;
 		}
-		else if (this.turn == 4*interval) { //down right
-			this.crusaderTarget[0] = this.mapXSize*3/4;
-			this.crusaderTarget[1] = this.mapYSize*3/4;
+		else if (this.turn == 7*interval) { //down right
+			this.crusaderTarget.x = this.mapXSize*3/4;
+			this.crusaderTarget.y = this.mapYSize*3/4;
 		}
-		else if (this.turn == 5*interval) { //down
-			this.crusaderTarget[0] = this.mapXSize/2;
-			this.crusaderTarget[1] = this.mapYSize*3/4;
+		else if (this.turn == 8*interval) { //down
+			this.crusaderTarget.x = this.mapXSize/2;
+			this.crusaderTarget.y = this.mapYSize*3/4;
 		}
-		else if (this.turn == 6*interval) { //down left
-			this.crusaderTarget[0] = this.mapXSize/4;
-			this.crusaderTarget[1] = this.mapYSize*3/4;
+		else if (this.turn == 9*interval) { //down left
+			this.crusaderTarget.x = this.mapXSize/4;
+			this.crusaderTarget.y = this.mapYSize*3/4;
 		}
-		else if (this.turn == 7*interval) { //left
-			this.crusaderTarget[0] = this.mapXSize/4;
-			this.crusaderTarget[1] = this.mapYSize/2;
+		else if (this.turn == 10*interval) { //left
+			this.crusaderTarget.x = this.mapXSize/4;
+			this.crusaderTarget.y = this.mapYSize/2;
 		}
-		else if (this.turn == 8*interval) { //up left
-			this.crusaderTarget[0] = this.mapXSize/4;
-			this.crusaderTarget[1] = this.mapYSize/4;
+		else if (this.turn == 11*interval) { //up left
+			this.crusaderTarget.x = this.mapXSize/4;
+			this.crusaderTarget.y = this.mapYSize/4;
 		}
 	}
 
 	//Can this pilgrim give stuff to the castle
 	public boolean canGiveStuff() {
-		int absoluteXCastleDistance=Math.abs(castleLocation[0]-this.me.x);
-		int absoluteYCastleDistance=Math.abs(castleLocation[1]-this.me.y);
+		int absoluteXCastleDistance=Math.abs(castleLocation.x-this.me.x);
+		int absoluteYCastleDistance=Math.abs(castleLocation.y-this.me.y);
 		if(absoluteXCastleDistance==0||absoluteXCastleDistance==1) {
 			if(absoluteYCastleDistance==0||absoluteYCastleDistance==1) {
 				return this.me.karbonite > 0 || this.me.fuel > 0;
@@ -246,30 +251,33 @@ public class MyRobot extends BCAbstractRobot {
 		while (iter.hasNext()) {
 			Robot goodGuy = iter.next();
 			if(goodGuy.unit == SPECS.CASTLE && goodGuy.team == this.me.team) {
-				castleLocation[0] = goodGuy.x;
-				castleLocation[1] = goodGuy.y;
+				castleLocation.x = goodGuy.x;
+				castleLocation.y = goodGuy.y;
 				return true;
 			}
 		}
 		return false;
 	}
 
+	//can this pilgrim mine karbonite
 	public boolean canMineKarbonite() {
 		return karboniteMap[me.y][me.x] && me.karbonite<20;
 	}
 
+	//can this pilgrim mine fuel
 	public boolean canMineFuel() {
 		return fuelMap[me.y][me.x] && me.fuel<100;
 	}
 
-	public MoveAction pathFind(int[] finalLocation) {
+	//Path finding algorithm for moving
+	public MoveAction pathFind(Point finalLocation) {
 //		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
-		if (fuel <= 30 || finalLocation[0]==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
+		if (fuel <= 30 || finalLocation.x==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
 //			this.log("cannot move");
 			return null;
 		}
-		int xDistance = finalLocation[0] - me.x;
-		int yDistance = finalLocation[1] - me.y;
+		int xDistance = finalLocation.x - me.x;
+		int yDistance = finalLocation.y - me.y;
 		int quadrant;
 		double absoluteXDistance = Math.abs(xDistance);
 		double absoluteYDistance = Math.abs(yDistance);
@@ -335,130 +343,130 @@ public class MyRobot extends BCAbstractRobot {
 			for (int i = 0; i < rotationTries.length; i++) {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
-					if (canMove(me, me.x, me.y + 1)) {
+					if (canMove(me.x, me.y + 1)) {
 						if(alreadyBeenHere(me,0,1)==false) {
 							return move(0,1);
 						}
-					} else if (canMove(me, me.x, me.y + 2)) {
+					} else if (canMove(me.x, me.y + 2)) {
 						if(alreadyBeenHere(me,0,2)==false) {
 							return move(0,2);
 						}
-					} else if (canMove(me, me.x, me.y + 3)) {
+					} else if (canMove(me.x, me.y + 3)) {
 						if(alreadyBeenHere(me,0,3)==false) {
 							return move(0,3);
 						}
 					}
 
 				} else if (index == 1) {
-					if (canMove(me, me.x + 1, me.y + 1)) {
+					if (canMove(me.x + 1, me.y + 1)) {
 						if(alreadyBeenHere(me,1,1)==false) {
 							return move(1,1);
 						}
-					} else if (canMove(me, me.x + 2, me.y + 2)) {
+					} else if (canMove(me.x + 2, me.y + 2)) {
 						if(alreadyBeenHere(me,2,2)==false) {
 							return move(2,2);
 						}
-					} else if (canMove(me, me.x + 2, me.y + 1)) {
+					} else if (canMove(me.x + 2, me.y + 1)) {
 						if(alreadyBeenHere(me,2,1)==false) {
 							return move(2,1);
 						}
-					} else if (canMove(me, me.x + 1, me.y + 2)) {
+					} else if (canMove(me.x + 1, me.y + 2)) {
 						if(alreadyBeenHere(me,1,2)==false) {
 							return move(1,2);
 						}
 					}
 				} else if (index == 2) {
-					if (canMove(me, me.x + 1, me.y)) {
+					if (canMove(me.x + 1, me.y)) {
 						if(alreadyBeenHere(me,1,0)==false) {
 							return move(1,0);
 						}
-					} else if (canMove(me, me.x + 2, me.y)) {
+					} else if (canMove(me.x + 2, me.y)) {
 						if(alreadyBeenHere(me,2,0)==false) {
 							return move(2,0);
 						}
-					} else if (canMove(me, me.x + 3, me.y)) {
+					} else if (canMove(me.x + 3, me.y)) {
 						if(alreadyBeenHere(me,3,0)==false) {
 							return move(3,0);
 						}
 					}
 				} else if (index == 3) {
-					if (canMove(me, me.x + 1, me.y - 1)) {
+					if (canMove(me.x + 1, me.y - 1)) {
 						if(alreadyBeenHere(me,1,-1)==false) {
 							return move(1,-1);
 						}
-					} else if (canMove(me, me.x + 2, me.y - 2)) {
+					} else if (canMove(me.x + 2, me.y - 2)) {
 						if(alreadyBeenHere(me,2,-2)==false) {
 							return move(2,-2);
 						}
-					} else if (canMove(me, me.x + 2, me.y - 1)) {
+					} else if (canMove(me.x + 2, me.y - 1)) {
 						if(alreadyBeenHere(me,2,-1)==false) {
 							return move(2,-1);
 						}
-					} else if (canMove(me, me.x + 1, me.y - 2)) {
+					} else if (canMove(me.x + 1, me.y - 2)) {
 						if(alreadyBeenHere(me,1,-2)==false) {
 							return move(1,-2);
 						}
 					}
 				} else if (index == 4) {
-					if (canMove(me, me.x, me.y - 1)) {
+					if (canMove(me.x, me.y - 1)) {
 						if(alreadyBeenHere(me,0,-1)==false) {
 							return move(0,-1);
 						}
-					} else if (canMove(me, me.x, me.y - 2)) {
+					} else if (canMove(me.x, me.y - 2)) {
 						if(alreadyBeenHere(me,0,-2)==false) {
 							return move(0,-2);
 						}
-					} else if (canMove(me, me.x, me.y - 3)) {
+					} else if (canMove(me.x, me.y - 3)) {
 						if(alreadyBeenHere(me,0,-3)==false) {
 							return move(0,-3);
 						}
 					}
 				} else if (index == 5) {
-					if (canMove(me, me.x - 1, me.y - 1)) {
+					if (canMove(me.x - 1, me.y - 1)) {
 						if(alreadyBeenHere(me,-1,-1)==false) {
 							return move(-1,-1);
 						}
-					} else if (canMove(me, me.x - 2, me.y - 2)) {
+					} else if (canMove(me.x - 2, me.y - 2)) {
 						if(alreadyBeenHere(me,-2,-2)==false) {
 							return move(-2,-2);
 						}
-					} else if (canMove(me, me.x - 2, me.y - 1)) {
+					} else if (canMove(me.x - 2, me.y - 1)) {
 						if(alreadyBeenHere(me,-2,-1)==false) {
 							return move(-2,-1);
 						}
-					} else if (canMove(me, me.x - 1, me.y - 2)) {
+					} else if (canMove(me.x - 1, me.y - 2)) {
 						if(alreadyBeenHere(me,-1,-2)==false) {
 							return move(-1,-2);
 						}
 					}
 				} else if (index == 6) {
-					if (canMove(me, me.x - 1, me.y)) {
+					if (canMove(me.x - 1, me.y)) {
 						if(alreadyBeenHere(me,-1,0)==false) {
 							return move(-1,0);
 						}
-					} else if (canMove(me, me.x - 2, me.y)) {
+					} else if (canMove(me.x - 2, me.y)) {
 						if(alreadyBeenHere(me,-2,0)==false) {
 							return move(-2,0);
 						}
-					} else if (canMove(me, me.x - 3, me.y)) {
+					} else if (canMove(me.x - 3, me.y)) {
 						if(alreadyBeenHere(me,-3,0)==false) {
 							return move(-3,0);
 						}
 					}
 				} else if (index == 7) {
-					if (canMove(me, me.x - 1, me.y + 1)) {
+					if (canMove(me.x - 1, me.y + 1)) {
 						if(alreadyBeenHere(me,-1,1)==false) {
 							return move(-1,1);
 						}
-					} else if (canMove(me, me.x - 2, me.y + 2)) {
+					} else if (canMove(me.x - 2, me.y + 2)) {
 						if(alreadyBeenHere(me,-2,2)==false) {
 							return move(-2,2);
 						}
-					} else if (canMove(me, me.x - 2, me.y + 1)) {
+					} else if (canMove(me.x - 2, me.y + 1)) {
 						if(alreadyBeenHere(me,-2,1)==false) {
 							return move(-2,1);
 						}
-					} else if (canMove(me, me.x - 1, me.y + 2)) {
+					} else if (canMove(me.x - 1, me.y + 2)) {
 						if(alreadyBeenHere(me,-1,2)==false) {
 							return move(-1,2);
 						}
@@ -469,66 +477,66 @@ public class MyRobot extends BCAbstractRobot {
 			for (int i = 0; i < rotationTries.length; i++) {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
-					if (canMove(me, me.x, me.y + 1)) {
+					if (canMove(me.x, me.y + 1)) {
 						if(alreadyBeenHere(me,0,1)==false) {
 							return move(0,1);
 						}
-					} else if (canMove(me, me.x, me.y + 2)) {
+					} else if (canMove(me.x, me.y + 2)) {
 						if(alreadyBeenHere(me,0,2)==false) {
 							return move(0,2);
 						}
 					}
 
 				} else if (index == 1) {
-					if (canMove(me, me.x + 1, me.y + 1)) {
+					if (canMove(me.x + 1, me.y + 1)) {
 						if(alreadyBeenHere(me,1,1)==false) {
 							return move(1,1);
 						}
 					}
 				} else if (index == 2) {
-					if (canMove(me, me.x + 1, me.y)) {
+					if (canMove(me.x + 1, me.y)) {
 						if(alreadyBeenHere(me,1,0)==false) {
 							return move(1,0);
 						}
-					} else if (canMove(me, me.x + 2, me.y)) {
+					} else if (canMove(me.x + 2, me.y)) {
 						if(alreadyBeenHere(me,1,0)==false) {
 							return move(1,0);
 						}
 					}
 				} else if (index == 3) {
-					if (canMove(me, me.x + 1, me.y - 1)) {
+					if (canMove(me.x + 1, me.y - 1)) {
 						if(alreadyBeenHere(me,1,-1)==false) {
 							return move(1,-1);
 						}
 					}
 				} else if (index == 4) {
-					if (canMove(me, me.x, me.y - 1)) {
+					if (canMove(me.x, me.y - 1)) {
 						if(alreadyBeenHere(me,0,-1)==false) {
 							return move(0,-1);
 						}
-					} else if (canMove(me, me.x, me.y - 2)) {
+					} else if (canMove(me.x, me.y - 2)) {
 						if(alreadyBeenHere(me,0,-2)==false) {
 							return move(0,-2);
 						}
 					}
 				} else if (index == 5) {
-					if (canMove(me, me.x - 1, me.y - 1)) {
+					if (canMove(me.x - 1, me.y - 1)) {
 						if(alreadyBeenHere(me,-1,-1)==false) {
 							return move(-1,-1);
 						}
 					}
 				} else if (index == 6) {
-					if (canMove(me, me.x - 1, me.y)) {
+					if (canMove(me.x - 1, me.y)) {
 						if(alreadyBeenHere(me,-1,0)==false) {
 							return move(-1,0);
 						}
-					} else if (canMove(me, me.x - 2, me.y)) {
+					} else if (canMove(me.x - 2, me.y)) {
 						if(alreadyBeenHere(me,-2,0)==false) {
 							return move(-2,0);
 						}
 					}
 				} else if (index == 7) {
-					if (canMove(me, me.x - 1, me.y + 1)) {
+					if (canMove(me.x - 1, me.y + 1)) {
 						if(alreadyBeenHere(me,-1,1)==false) {
 							return move(-1,1);
 						}
@@ -539,10 +547,12 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	public boolean canMove(Robot me, int finalX, int finalY) {
+	//can this robot move
+	public boolean canMove(int finalX, int finalY) {
 		return passableMap[finalY][finalX] && visibleRobotMap[finalY][finalX] == 0;
 	}
 
+	//has this robot already been there
 	public boolean alreadyBeenHere(Robot me, int dx, int dy) {
 		boolean alreadyOccupied = false;
 		for(int prev = 0; prev < previousLocations.size(); prev+=2) {
@@ -566,11 +576,10 @@ public class MyRobot extends BCAbstractRobot {
 	
 	//is this unit next to a castle?
 	public boolean isAdjacentToCastle() {
-		int x = this.me.x;
-		int y = this.me.y;
-		return Math.abs(x-this.castleLocation[0])==1 && Math.abs(y-this.castleLocation[1])==1;
+		return Math.abs(this.me.x-this.castleLocation.x)==1 && Math.abs(this.me.y-this.castleLocation.y)==1;
 	}
 
+	//checks if adjacent tiles are available
 	public int[] checkAdjacentAvailable() {
 		int x = this.me.x;
 		int y = this.me.y;
@@ -618,7 +627,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	
-	public int[] searchForKarboniteLocation() {
+	public Point searchForKarboniteLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
@@ -636,13 +645,10 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		int[] location = new int[2];
-		location[0] = minXCoordinate;
-		location[1] = minYCoordinate;
-		return location;
+		return new Point(minXCoordinate, minYCoordinate);
 	}
 
-	public int[] searchForFuelLocation() {
+	public Point searchForFuelLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
@@ -659,10 +665,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		int[] location = new int[2];
-		location[0] = minXCoordinate;
-		location[1] = minYCoordinate;
-		return location;
+		return new Point(minXCoordinate, minYCoordinate);
 	}
 
 	public Action makeUnit(int type) {
