@@ -115,37 +115,37 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
-			//move crusade target every 100 turns
+			//move crusade target every 50 turns
 //			this.log(crusaderTarget[0] + " " + crusaderTarget[1]);
-			if (this.crusadeTurns == 100) { //up
+			if (this.crusadeTurns == 50) { //up
 				this.crusaderTarget[0] = this.mapXSize/2;
 				this.crusaderTarget[1] = this.mapYSize/4;
 			}
-			else if (this.crusadeTurns == 200) { //up right
+			else if (this.crusadeTurns == 100) { //up right
 				this.crusaderTarget[0] = this.mapXSize*3/4;
 				this.crusaderTarget[1] = this.mapYSize/4;
 			}
-			else if (this.crusadeTurns == 300) { //right
+			else if (this.crusadeTurns == 150) { //right
 				this.crusaderTarget[0] = this.mapXSize*3/4;
 				this.crusaderTarget[1] = this.mapYSize/2;
 			}
-			else if (this.crusadeTurns == 400) { //down right
+			else if (this.crusadeTurns == 200) { //down right
 				this.crusaderTarget[0] = this.mapXSize*3/4;
 				this.crusaderTarget[1] = this.mapYSize*3/4;
 			}
-			else if (this.crusadeTurns == 500) { //down
+			else if (this.crusadeTurns == 250) { //down
 				this.crusaderTarget[0] = this.mapXSize/2;
 				this.crusaderTarget[1] = this.mapYSize*3/4;
 			}
-			else if (this.crusadeTurns == 600) { //down left
+			else if (this.crusadeTurns == 300) { //down left
 				this.crusaderTarget[0] = this.mapXSize/4;
 				this.crusaderTarget[1] = this.mapYSize*3/4;
 			}
-			else if (this.crusadeTurns == 700) { //left
+			else if (this.crusadeTurns == 350) { //left
 				this.crusaderTarget[0] = this.mapXSize/4;
 				this.crusaderTarget[1] = this.mapYSize/2;
 			}
-			else if (this.crusadeTurns == 800) { //up left
+			else if (this.crusadeTurns == 400) { //up left
 				this.crusaderTarget[0] = this.mapXSize/4;
 				this.crusaderTarget[1] = this.mapYSize/4;
 			}
