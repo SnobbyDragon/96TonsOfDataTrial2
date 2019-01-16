@@ -48,9 +48,10 @@ public class MyRobot extends BCAbstractRobot {
 		if (bots.get("crusaders") >= 7) {
 			this.crusadeMode = true;
 		}
-		if (this.crusadeMode) {
-			this.crusadeTurns++;
-		}
+//		if (this.crusadeMode) {
+//			this.crusadeTurns++;
+//			this.log(this.crusaderTarget[0] + " " + this.crusaderTarget[1]);
+//		}
 		if (me.unit == SPECS.CASTLE) { //castle
 			if (bots.get("pilgrims") < 5) { //build 5 pilgrims
 				if (this.canBuild(SPECS.PILGRIM))  {
@@ -117,38 +118,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.unit == SPECS.CRUSADER) { //crusader
 			//move crusade target every 50 turns
 //			this.log(crusaderTarget[0] + " " + crusaderTarget[1]);
-			if (this.crusadeTurns == 50) { //up
-				this.crusaderTarget[0] = this.mapXSize/2;
-				this.crusaderTarget[1] = this.mapYSize/4;
-			}
-			else if (this.crusadeTurns == 100) { //up right
-				this.crusaderTarget[0] = this.mapXSize*3/4;
-				this.crusaderTarget[1] = this.mapYSize/4;
-			}
-			else if (this.crusadeTurns == 150) { //right
-				this.crusaderTarget[0] = this.mapXSize*3/4;
-				this.crusaderTarget[1] = this.mapYSize/2;
-			}
-			else if (this.crusadeTurns == 200) { //down right
-				this.crusaderTarget[0] = this.mapXSize*3/4;
-				this.crusaderTarget[1] = this.mapYSize*3/4;
-			}
-			else if (this.crusadeTurns == 250) { //down
-				this.crusaderTarget[0] = this.mapXSize/2;
-				this.crusaderTarget[1] = this.mapYSize*3/4;
-			}
-			else if (this.crusadeTurns == 300) { //down left
-				this.crusaderTarget[0] = this.mapXSize/4;
-				this.crusaderTarget[1] = this.mapYSize*3/4;
-			}
-			else if (this.crusadeTurns == 350) { //left
-				this.crusaderTarget[0] = this.mapXSize/4;
-				this.crusaderTarget[1] = this.mapYSize/2;
-			}
-			else if (this.crusadeTurns == 400) { //up left
-				this.crusaderTarget[0] = this.mapXSize/4;
-				this.crusaderTarget[1] = this.mapYSize/4;
-			}
+			this.setCrusadeTarget(50);
 			if (fuel >= 10) {
 				HashSet<Robot> enemies = findBadGuys();
 				if (enemies.size() == 0 && this.fuel > 300) {
@@ -219,7 +189,46 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 	}
+	
+	//TODO update this
+	public void setCrusadeTarget(int interval) {
+//		this.log(this.crusadeTurns + "");
+		if (this.turn == interval) { //up
+//			this.log("up crusade target");
+			this.crusaderTarget[0] = this.mapXSize/2;
+			this.crusaderTarget[1] = this.mapYSize/4;
+		}
+		else if (this.turn == 2*interval) { //up right
+			this.crusaderTarget[0] = this.mapXSize*3/4;
+			this.crusaderTarget[1] = this.mapYSize/4;
+		}
+		else if (this.turn == 3*interval) { //right
+			this.crusaderTarget[0] = this.mapXSize*3/4;
+			this.crusaderTarget[1] = this.mapYSize/2;
+		}
+		else if (this.turn == 4*interval) { //down right
+			this.crusaderTarget[0] = this.mapXSize*3/4;
+			this.crusaderTarget[1] = this.mapYSize*3/4;
+		}
+		else if (this.turn == 5*interval) { //down
+			this.crusaderTarget[0] = this.mapXSize/2;
+			this.crusaderTarget[1] = this.mapYSize*3/4;
+		}
+		else if (this.turn == 6*interval) { //down left
+			this.crusaderTarget[0] = this.mapXSize/4;
+			this.crusaderTarget[1] = this.mapYSize*3/4;
+		}
+		else if (this.turn == 7*interval) { //left
+			this.crusaderTarget[0] = this.mapXSize/4;
+			this.crusaderTarget[1] = this.mapYSize/2;
+		}
+		else if (this.turn == 8*interval) { //up left
+			this.crusaderTarget[0] = this.mapXSize/4;
+			this.crusaderTarget[1] = this.mapYSize/4;
+		}
+	}
 
+	//Can this pilgrim give stuff to the castle
 	public boolean canGiveStuff() {
 		int absoluteXCastleDistance=Math.abs(castleLocation[0]-this.me.x);
 		int absoluteYCastleDistance=Math.abs(castleLocation[1]-this.me.y);
