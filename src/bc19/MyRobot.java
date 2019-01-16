@@ -116,9 +116,9 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
-			//move crusade target every 50 turns
+			//move crusade target every 30 turns
 //			this.log(crusaderTarget[0] + " " + crusaderTarget[1]);
-			this.setCrusadeTarget(50);
+			this.setCrusadeTarget(30);
 			if (fuel >= 10) {
 				HashSet<Robot> enemies = findBadGuys();
 				if (enemies.size() == 0 && this.fuel > 300) {
