@@ -1,6 +1,5 @@
 package bc19;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,8 +17,8 @@ public class MyRobot extends BCAbstractRobot {
 	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
 	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
 	public boolean haveCastle = false;
-	public Point castleLocation = new Point();
-	public Point crusaderTarget = new Point();
+	public int[] castleLocation = new int[2];
+	public int[] crusaderTarget = new int[2];
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>();
 	public boolean crusadeMode = false;
 
@@ -34,7 +33,8 @@ public class MyRobot extends BCAbstractRobot {
 			mapYSize = passableMap.length;
 			mapXSize = passableMap[0].length;
 			//first target center of the map
-			crusaderTarget.setLocation(mapXSize/2, mapYSize/2);
+			crusaderTarget[0] = mapXSize/2;
+			crusaderTarget[1] = mapYSize/2;
 
 			//records number of robots
 			bots.put("pilgrims", 0);
@@ -48,7 +48,7 @@ public class MyRobot extends BCAbstractRobot {
 			this.crusadeMode = true;
 		}
 		if (me.unit == SPECS.CASTLE) { //castle
-			if (bots.get("pilgrims") < 5) { //build 5 pilgrims
+			if (bots.get("pilgrims") < 5 || (this.crusadeMode && bots.get("crusaders")%4==0)) { //build 5 pilgrims initially; for every 4 crusaders, make a pilgrim
 				if (this.canBuild(SPECS.PILGRIM))  {
 					//log("built pilgrim at x=" + this.checkAdjacentAvailable()[0] + " y=" + this.checkAdjacentAvailable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
 					bots.put("pilgrims", bots.get("pilgrims") + 1);
@@ -90,8 +90,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			if (haveCastle && canGiveStuff()) {
 //				this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
-				int xCastle = castleLocation.x - this.me.x;
-				int yCastle = castleLocation.y - this.me.y;
+				int xCastle = castleLocation[0] - this.me.x;
+				int yCastle = castleLocation[1] - this.me.y;
 				return give(xCastle,yCastle,me.karbonite,me.fuel);
 			}
 			if (haveCastle && (me.karbonite==20||me.fuel==100)) {
@@ -99,10 +99,10 @@ public class MyRobot extends BCAbstractRobot {
 				return pathFind(castleLocation);
 			}
 			else {
-				Point closestKarbonite = searchForKarboniteLocation();
-				Point closestFuel = searchForFuelLocation();
+				int[] closestKarbonite = searchForKarboniteLocation();
+				int[] closestFuel = searchForFuelLocation();
 //				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-				if (crusadeMode || findDistance(me,closestKarbonite.x,closestKarbonite.y) >= findDistance(me,closestFuel.x,closestFuel.y)) {
+				if (crusadeMode || findDistance(me,closestKarbonite[0],closestKarbonite[1]) >= findDistance(me,closestFuel[0],closestFuel[1])) {
 					return pathFind(closestFuel);
 				}
 				else {
@@ -128,7 +128,7 @@ public class MyRobot extends BCAbstractRobot {
 				} catch (Exception e) {
 //					log("Can't attack the man");
 					try {
-						Point closeBadGuyLocation=new Point(closeBadGuy.x, closeBadGuy.y);
+						int[] closeBadGuyLocation = {closeBadGuy.x, closeBadGuy.y};
 //						log("X coor bad: "+closeBadGuyLocation[0]);
 //						log("Y coor bad: "+closeBadGuyLocation[1]);
 						return pathFind(closeBadGuyLocation);
@@ -187,56 +187,56 @@ public class MyRobot extends BCAbstractRobot {
 	public void setCrusadeTarget(int interval) {
 //		this.log(this.crusadeTurns + "");
 		if (this.turn == interval) { //checks reflective vertical
-			this.crusaderTarget.x = this.me.x;
-			this.crusaderTarget.y = this.mapYSize - this.me.y;
+			this.crusaderTarget[0] = this.me.x;
+			this.crusaderTarget[1] = this.mapYSize - this.me.y;
 		}
 		else if (this.turn == 2*interval) { //checks reflective both (diagonal)
-			this.crusaderTarget.x = this.mapXSize - this.me.x;
-			this.crusaderTarget.y = this.mapYSize - this.me.y;
+			this.crusaderTarget[0] = this.mapXSize - this.me.x;
+			this.crusaderTarget[1] = this.mapYSize - this.me.y;
 		}
 		else if (this.turn == 3*interval) { //checks reflective horizontal
-			this.crusaderTarget.x = this.mapXSize - this.me.x;
-			this.crusaderTarget.y = this.me.y;
+			this.crusaderTarget[0] = this.mapXSize - this.me.x;
+			this.crusaderTarget[1] = this.me.y;
 		}
 		else if (this.turn == 4*interval) { //up
 //			this.log("up crusade target");
-			this.crusaderTarget.x = this.mapXSize/2;
-			this.crusaderTarget.y = this.mapYSize/4;
+			this.crusaderTarget[0] = this.mapXSize/2;
+			this.crusaderTarget[1] = this.mapYSize/4;
 		}
 		else if (this.turn == 5*interval) { //up right
-			this.crusaderTarget.x = this.mapXSize*3/4;
-			this.crusaderTarget.y = this.mapYSize/4;
+			this.crusaderTarget[0] = this.mapXSize*3/4;
+			this.crusaderTarget[1] = this.mapYSize/4;
 		}
 		else if (this.turn == 6*interval) { //right
-			this.crusaderTarget.x = this.mapXSize*3/4;
-			this.crusaderTarget.y = this.mapYSize/2;
+			this.crusaderTarget[0] = this.mapXSize*3/4;
+			this.crusaderTarget[1] = this.mapYSize/2;
 		}
 		else if (this.turn == 7*interval) { //down right
-			this.crusaderTarget.x = this.mapXSize*3/4;
-			this.crusaderTarget.y = this.mapYSize*3/4;
+			this.crusaderTarget[0] = this.mapXSize*3/4;
+			this.crusaderTarget[1] = this.mapYSize*3/4;
 		}
 		else if (this.turn == 8*interval) { //down
-			this.crusaderTarget.x = this.mapXSize/2;
-			this.crusaderTarget.y = this.mapYSize*3/4;
+			this.crusaderTarget[0] = this.mapXSize/2;
+			this.crusaderTarget[1] = this.mapYSize*3/4;
 		}
 		else if (this.turn == 9*interval) { //down left
-			this.crusaderTarget.x = this.mapXSize/4;
-			this.crusaderTarget.y = this.mapYSize*3/4;
+			this.crusaderTarget[0] = this.mapXSize/4;
+			this.crusaderTarget[1] = this.mapYSize*3/4;
 		}
 		else if (this.turn == 10*interval) { //left
-			this.crusaderTarget.x = this.mapXSize/4;
-			this.crusaderTarget.y = this.mapYSize/2;
+			this.crusaderTarget[0] = this.mapXSize/4;
+			this.crusaderTarget[1] = this.mapYSize/2;
 		}
 		else if (this.turn == 11*interval) { //up left
-			this.crusaderTarget.x = this.mapXSize/4;
-			this.crusaderTarget.y = this.mapYSize/4;
+			this.crusaderTarget[0] = this.mapXSize/4;
+			this.crusaderTarget[1] = this.mapYSize/4;
 		}
 	}
 
 	//Can this pilgrim give stuff to the castle
 	public boolean canGiveStuff() {
-		int absoluteXCastleDistance=Math.abs(castleLocation.x-this.me.x);
-		int absoluteYCastleDistance=Math.abs(castleLocation.y-this.me.y);
+		int absoluteXCastleDistance=Math.abs(castleLocation[0]-this.me.x);
+		int absoluteYCastleDistance=Math.abs(castleLocation[1]-this.me.y);
 		if(absoluteXCastleDistance==0||absoluteXCastleDistance==1) {
 			if(absoluteYCastleDistance==0||absoluteYCastleDistance==1) {
 				return this.me.karbonite > 0 || this.me.fuel > 0;
@@ -251,8 +251,8 @@ public class MyRobot extends BCAbstractRobot {
 		while (iter.hasNext()) {
 			Robot goodGuy = iter.next();
 			if(goodGuy.unit == SPECS.CASTLE && goodGuy.team == this.me.team) {
-				castleLocation.x = goodGuy.x;
-				castleLocation.y = goodGuy.y;
+				castleLocation[0] = goodGuy.x;
+				castleLocation[1] = goodGuy.y;
 				return true;
 			}
 		}
@@ -270,14 +270,14 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	//Path finding algorithm for moving
-	public MoveAction pathFind(Point finalLocation) {
+	public MoveAction pathFind(int[] finalLocation) {
 //		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
-		if (fuel <= 30 || finalLocation.x==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
+		if (fuel <= 30 || finalLocation[0]==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
 //			this.log("cannot move");
 			return null;
 		}
-		int xDistance = finalLocation.x - me.x;
-		int yDistance = finalLocation.y - me.y;
+		int xDistance = finalLocation[0] - me.x;
+		int yDistance = finalLocation[1] - me.y;
 		int quadrant;
 		double absoluteXDistance = Math.abs(xDistance);
 		double absoluteYDistance = Math.abs(yDistance);
@@ -576,7 +576,7 @@ public class MyRobot extends BCAbstractRobot {
 	
 	//is this unit next to a castle?
 	public boolean isAdjacentToCastle() {
-		return Math.abs(this.me.x-this.castleLocation.x)==1 && Math.abs(this.me.y-this.castleLocation.y)==1;
+		return Math.abs(this.me.x-this.castleLocation[0])==1 && Math.abs(this.me.y-this.castleLocation[1])==1;
 	}
 
 	//checks if adjacent tiles are available
@@ -627,7 +627,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	//searches for the closest karbonite
-	public Point searchForKarboniteLocation() {
+	public int[] searchForKarboniteLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
@@ -645,11 +645,11 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		return new Point(minXCoordinate, minYCoordinate);
+		return new int[] {minXCoordinate, minYCoordinate};
 	}
 
 	//searches for the closest fuel
-	public Point searchForFuelLocation() {
+	public int[] searchForFuelLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
 		int minYCoordinate = -1;
@@ -666,7 +666,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		return new Point(minXCoordinate, minYCoordinate);
+		return new int[] {minXCoordinate, minYCoordinate};
 	}
 
 	//builds a unit where available
