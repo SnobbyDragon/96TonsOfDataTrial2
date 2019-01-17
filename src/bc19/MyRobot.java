@@ -626,7 +626,7 @@ public class MyRobot extends BCAbstractRobot {
 		return null; //surrounded by impassable terrain
 	}
 
-	
+	//searches for the closest karbonite
 	public Point searchForKarboniteLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
@@ -648,6 +648,7 @@ public class MyRobot extends BCAbstractRobot {
 		return new Point(minXCoordinate, minYCoordinate);
 	}
 
+	//searches for the closest fuel
 	public Point searchForFuelLocation() {
 		double minDistance = Double.MAX_VALUE;
 		int minXCoordinate = -1;
@@ -668,6 +669,7 @@ public class MyRobot extends BCAbstractRobot {
 		return new Point(minXCoordinate, minYCoordinate);
 	}
 
+	//builds a unit where available
 	public Action makeUnit(int type) {
 		int[] spot = this.checkAdjacentAvailable();
 		return this.buildUnit(type, spot[0] - this.me.x, spot[1] - this.me.y);
@@ -732,6 +734,7 @@ public class MyRobot extends BCAbstractRobot {
 		return theGoodGuys;
 	}
 
+	//finds the lowest health enemy *--- THIS DOESNT ACTUALLY WORK BECAUSE YOU CAN'T SEE ENEMY HEALTH ---*
 	public Robot findPrimaryEnemyHealth(HashSet<Robot> potentialEnemies) {
 		int lowestHealth = Integer.MAX_VALUE;
 		Robot weakestBot = null;
@@ -762,10 +765,12 @@ public class MyRobot extends BCAbstractRobot {
 		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
 	}
 
+	//checks if the robot is in attack range
 	public boolean canAttack(double distance) {
-		return this.getMinAttackRangeRadius() <= distance && distance <= this.getMaxAttackRangeRadius();
+		return this.getMinAttackRangeRadius(this.me.unit) <= distance && distance <= this.getMaxAttackRangeRadius(this.me.unit);
 	}
 
+	//finds the closest enemy
 	public Robot findPrimaryEnemyDistance(HashSet<Robot> potentialEnemies) {
 		double closestDistance = Double.MAX_VALUE;
 		Robot closestBot = null;
@@ -783,6 +788,7 @@ public class MyRobot extends BCAbstractRobot {
 		return closestBot;
 	}
 
+	//groups enemies by type
 	public HashMap<Integer, HashSet<Robot>> groupByType(HashSet<Robot> potentialEnemies) {
 		HashMap<Integer, HashSet<Robot>> groupedEnemies = new HashMap<Integer, HashSet<Robot>>();
 		groupedEnemies.put(SPECS.CRUSADER, new HashSet<Robot>());
@@ -800,6 +806,7 @@ public class MyRobot extends BCAbstractRobot {
 		return groupedEnemies;
 	}
 
+	//finds the lowest health enemy with priority by type *--- THIS DOESNT ACTUALLY WORK BECAUSE YOU CAN'T SEE ENEMY HEALTH ---*
 	public Robot findPrimaryEnemyTypeHealth(HashSet<Robot> potentialEnemies) {
 		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
 		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
@@ -819,7 +826,29 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PROPHET));
 	}
+	
+	//finds the closest enemy with priority by type
+		public Robot findPrimaryEnemyTypeDistance(HashSet<Robot> potentialEnemies) {
+			HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
+			if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
+				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PREACHER));
+			}
+			if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
+				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
+			}
+			if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
+				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PILGRIM));
+			}
+			if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
+				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CASTLE));
+			}
+			if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
+				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CHURCH));
+			}
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
+		}
 
+	//finds the closest enemy that can attack
 	public Robot findClosestThreat(HashSet<Robot> potentialEnemies) {
 		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
 		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
@@ -831,20 +860,24 @@ public class MyRobot extends BCAbstractRobot {
 		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 	}
 
+	//can this unit be built? do we have enough fuel and karbonite?
 	public boolean canBuild(int type) {
 		return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentAvailable()!=null;
 	}
 
-	public int getMovementRangeRadius() {
-		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].SPEED);
+	//gets the movement speed radius of a unit
+	public int getMovementRangeRadius(int unit) {
+		return (int)Math.sqrt(SPECS.UNITS[unit].SPEED);
 	}
 
-	public int getMinAttackRangeRadius() {
-		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[0]);
+	//gets the minimum attack range radius of a unit
+	public int getMinAttackRangeRadius(int unit) {
+		return (int)Math.sqrt(SPECS.UNITS[unit].ATTACK_RADIUS[0]);
 	}
 
-	public int getMaxAttackRangeRadius() {
-		return (int)Math.sqrt(SPECS.UNITS[this.me.unit].ATTACK_RADIUS[1]);
+	//gets the maximum attack range radius of a unit
+	public int getMaxAttackRangeRadius(int unit) {
+		return (int)Math.sqrt(SPECS.UNITS[unit].ATTACK_RADIUS[1]);
 	}
 
 }
