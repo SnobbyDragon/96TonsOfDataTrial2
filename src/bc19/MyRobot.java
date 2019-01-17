@@ -186,17 +186,17 @@ public class MyRobot extends BCAbstractRobot {
 	//TODO update this
 	public void setCrusadeTarget(int interval) {
 //		this.log(this.crusadeTurns + "");
-		if (this.turn == interval) { //checks reflective horizontal
-			this.crusaderTarget.x = this.mapXSize - this.me.x;
-			this.crusaderTarget.y = this.me.y;
-		}
-		else if (this.turn == 2*interval) { //checks reflective vertical
+		if (this.turn == interval) { //checks reflective vertical
 			this.crusaderTarget.x = this.me.x;
 			this.crusaderTarget.y = this.mapYSize - this.me.y;
 		}
-		else if (this.turn == 3*interval) { //checks reflective both (diagonal)
+		else if (this.turn == 2*interval) { //checks reflective both (diagonal)
 			this.crusaderTarget.x = this.mapXSize - this.me.x;
 			this.crusaderTarget.y = this.mapYSize - this.me.y;
+		}
+		else if (this.turn == 3*interval) { //checks reflective horizontal
+			this.crusaderTarget.x = this.mapXSize - this.me.x;
+			this.crusaderTarget.y = this.me.y;
 		}
 		else if (this.turn == 4*interval) { //up
 //			this.log("up crusade target");
