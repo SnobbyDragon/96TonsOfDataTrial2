@@ -147,18 +147,6 @@ public class MyRobot extends BCAbstractRobot {
 				
 			}*/
 		}
-		if(me.unit==SPECS.PREACHER) {
-			/*log("I am a preacher");
-			if (fuel>=15) {
-				HashSet<Robot> enemies=findBadGuys();
-				Robot targetBadGuy=findPrimaryEnemyHealth(enemies);
-				try {
-					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
-				} catch (Exception e) {
-					
-				}
-			}*/
-		}
 		/*if(me.unit==SPECS.CRUSADER) {
 			log("I am a crusader");
 			if(fuel>=10) {
@@ -189,10 +177,158 @@ public class MyRobot extends BCAbstractRobot {
 		}*/
 		//Crusader pseudocode: Looks for badGuys, if sees none, pathFind to the center of the Map
 		//If see some, attack if possible, otherwise pathfind
+		if(me.unit==SPECS.PREACHER) {
+			if(fuel>=15) {
+				HashSet<Robot> potentialEnemies=findBadGuys();
+				AttackAction maybeSauce=preacherAttack(me,potentialEnemies);
+				if(maybeSauce!=null) {
+					return maybeSauce;
+				}
+			}
+		}
 		log("Did nothing");
 		return null;
 
 	}
+	
+	
+	//Find closest enemy
+	//Loop through various locations, and try to attack there
+	
+	public AttackAction preacherAttack(Robot me, HashSet<Robot> potentialEnemies) {
+		HashSet<Robot> enemies=findBadGuys();
+		Robot targetBadGuy=findBadGuy(me,enemies);
+		while(targetBadGuy==null||enemies.size()>0) {
+			enemies.remove(targetBadGuy);
+			targetBadGuy=findBadGuy(me,enemies);
+		}
+		int xDistance=targetBadGuy.x-me.x;
+		int yDistance=targetBadGuy.y-me.y;
+		double absoluteXDistance = Math.abs(xDistance);
+		double absoluteYDistance = Math.abs(yDistance);
+		double radianAngle;
+		double piHalf = Math.PI / 2;
+		double piEight = Math.PI / 8;
+		double piThreeEight = piEight * 3;
+		String optimalDirection = "";
+		if (xDistance >= 0 && yDistance <= 0) {
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "EAST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "NORTH";
+			} else {
+				optimalDirection = "NORTHEAST";
+			}
+		} else if (xDistance <= 0 && yDistance <= 0) {
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "WEST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "NORTH";
+			} else {
+				optimalDirection = "NORTHWEST";
+			}
+		} else if (xDistance <= 0 && yDistance >= 0) {
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "WEST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "SOUTH";
+			} else {
+				optimalDirection = "SOUTHWEST";
+			}
+		} else if (xDistance >= 0 && yDistance >= 0) {
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "EAST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "SOUTH";
+			} else {
+				optimalDirection = "SOUTHEAST";
+			}
+		}
+		//		int xDistance=targetBadGuy.x-me.x;
+		//		int yDistance=targetBadGuy.y-me.y;
+		AttackAction possibleAction;
+		if(optimalDirection=="NORTH") {
+			try {
+				possibleAction=attack(0, -4);
+				if(possibleAction != null) {
+					return attack(0,-4);
+				}
+			} catch (Exception e) {
+				
+			}
+		} else if(optimalDirection=="NORTHEAST") {
+			try {
+				possibleAction=attack(2, -3);
+				if(possibleAction != null) {
+					return attack(2,-3);
+				}
+			} catch (Exception e) {
+				
+			}
+			
+		} else if(optimalDirection=="EAST") {
+			try {
+				possibleAction=attack(4, 0);
+				if(possibleAction != null) {
+					return attack(4,0);
+				}
+			} catch (Exception e) {
+				
+			}
+		} else if(optimalDirection=="SOUTHEAST") {
+			try {
+				possibleAction=attack(3, 2);
+				if(possibleAction != null) {
+					return attack(3,2);
+				}
+			} catch (Exception e) {
+				
+			}
+		} else if(optimalDirection=="SOUTH") {
+			try {
+				possibleAction=attack(0, 4);
+				if(possibleAction != null) {
+					return attack(0,4);
+				}
+			} catch (Exception e) {
+				
+			}
+		} else if(optimalDirection=="SOUTHWEST") {
+			try {
+				possibleAction=attack(-2, 3);
+				if(possibleAction != null) {
+					return attack(-2, 3);
+				}
+			} catch (Exception e) {
+				
+			}
+		} else if(optimalDirection=="WEST") {
+			try {
+				possibleAction=attack(-4, 0);
+				if(possibleAction != null) {
+					return attack(-4,0);
+				}
+			} catch (Exception e) {
+				
+			}
+		} else if(optimalDirection=="NORTHWEST") {
+			try {
+				possibleAction=attack(-3, -2);
+				if(possibleAction != null) {
+					return attack(-3,-2);
+				}
+			} catch (Exception e) {
+				
+			}
+		}
+		return null;
+	}
+	
+	
 	
 	public Robot findBadGuy(Robot me,HashSet<Robot> potentialEnemies) {
 		double distance=Double.MAX_VALUE;
