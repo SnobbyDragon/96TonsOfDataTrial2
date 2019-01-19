@@ -197,9 +197,12 @@ public class MyRobot extends BCAbstractRobot {
 	
 	public AttackAction preacherAttack(Robot me, HashSet<Robot> potentialEnemies) {
 		Robot targetBadGuy=findBadGuy(me,potentialEnemies);
-		while(targetBadGuy==null||potentialEnemies.size()>0) {
+		while(targetBadGuy==null&&potentialEnemies.size()>0) {
 			potentialEnemies.remove(targetBadGuy);
 			targetBadGuy=findBadGuy(me,potentialEnemies);
+		}
+		if(potentialEnemies.size()==0) {
+			return null;
 		}
 		int xDistance=targetBadGuy.x-me.x;
 		int yDistance=targetBadGuy.y-me.y;
