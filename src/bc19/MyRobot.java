@@ -8,14 +8,19 @@ import java.util.Iterator;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
-	public int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
+	public final int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
 	public boolean[][] passableMap;
 	public int[][] visibleRobotMap;
 	public boolean[][] karboniteMap;
 	public boolean[][] fuelMap;
+	public int mapYSize, mapXSize; //size of the map, length y and length x
 	public HashSet<int[]> karboLocations;
 	public HashSet<int[]> fuelLocations;
-	public int mapYSize, mapXSize; //size of the map, length y and length x
+	public int karboDepositNum;
+	public int fuelDepositNum;
+	public int closeKarboNum, farKarboNum;
+	public int closeFuelNum, farFuelNum;
+	public final int CLOSE = 5, FAR = 10;
 	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
 	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
 	public boolean haveCastle = false;
@@ -42,6 +47,15 @@ public class MyRobot extends BCAbstractRobot {
 			fuelLocations = this.getFuelLocations();
 //			this.log(karboLocations.toString());
 			
+			//sets number of deposits
+			karboDepositNum = this.karboLocations.size();
+			fuelDepositNum = this.fuelLocations.size();
+			//close and far deposits
+			closeKarboNum = this.findCloseKarboDepositNum(CLOSE); //closer than 5
+			farKarboNum = this.findFarKarboDepositNum(FAR); //farther than 10
+			closeFuelNum = this.findCloseFuelDepositNum(CLOSE); //closer than 5
+			farFuelNum = this.findFarFuelDepositNum(FAR); //farther than 10
+			
 			//first target center of the map
 			crusaderTarget[0] = mapXSize/2;
 			crusaderTarget[1] = mapYSize/2;
@@ -58,7 +72,13 @@ public class MyRobot extends BCAbstractRobot {
 			this.crusadeMode = true;
 		}
 		if (me.unit == SPECS.CASTLE) { //castle
-			if (bots.get("pilgrims") < 5 || (this.crusadeMode && this.makeEvenMorePilgrims())) { //build 5 pilgrims initially; during crusade mode, check to make more pilgrims
+			if (this.karbonite > 40 && this.turn <= 3) { //preachers to protect in the beginning
+				if (this.canBuild(SPECS.PREACHER)) {
+					bots.put("preachers", bots.get("preachers") + 1);
+					return this.makeUnit(SPECS.PREACHER);
+				}
+			}
+			if (this.makeMorePilgrims() || (this.crusadeMode && this.makeEvenMorePilgrims())) {
 				if (this.canBuild(SPECS.PILGRIM))  {
 					//log("built pilgrim at x=" + this.checkAdjacentAvailable()[0] + " y=" + this.checkAdjacentAvailable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
 					bots.put("pilgrims", bots.get("pilgrims") + 1);
@@ -102,7 +122,7 @@ public class MyRobot extends BCAbstractRobot {
 //				this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
 				int xCastle = castleLocation[0] - this.me.x;
 				int yCastle = castleLocation[1] - this.me.y;
-				return give(xCastle,yCastle,me.karbonite,me.fuel);
+				return give(xCastle, yCastle, me.karbonite, me.fuel);
 			}
 			if (haveCastle && (me.karbonite==20||me.fuel==100)) {
 //				this.log("returning to castle");
@@ -121,16 +141,16 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
-			//move crusade target every 20 turns
+			//move crusade target every so turns
 //			this.log(crusaderTarget.x + " " + crusaderTarget.y);
-			this.setCrusadeTarget(20);
+			this.setCrusadeTarget(this.mapXSize/2);
 			if (fuel >= 10) {
 				HashSet<Robot> enemies = findBadGuys();
-				if (enemies.size() == 0 && this.fuel > 300) {
+				if (enemies.size() == 0 && this.fuel > 100) {
 					return pathFind(crusaderTarget);
 				}
 //				log("Enemies size: "+enemies.size());
-				Robot closeBadGuy = findBadGuy(enemies);
+				Robot closeBadGuy = findPrimaryEnemyDistance(enemies);
 				try {
 //					log("Bad guy's health: " + closeBadGuy.health);
 //					log("Other bad guy data " + closeBadGuy.x);
@@ -138,10 +158,9 @@ public class MyRobot extends BCAbstractRobot {
 				} catch (Exception e) {
 //					log("Can't attack the man");
 					try {
-						int[] closeBadGuyLocation = {closeBadGuy.x, closeBadGuy.y};
 //						log("X coor bad: "+closeBadGuyLocation[0]);
 //						log("Y coor bad: "+closeBadGuyLocation[1]);
-						return pathFind(closeBadGuyLocation);
+						return pathFind(new int[]{closeBadGuy.x, closeBadGuy.y});
 					} catch (Exception ef) {
 //						log("Can find the man");
 					}
@@ -162,22 +181,25 @@ public class MyRobot extends BCAbstractRobot {
 //				}
 //			}
 		}
-		if(me.unit==SPECS.PREACHER) { //preacher
-			if (!this.haveCastle) {
-				this.locateNearbyCastle();
-			}
-			if (this.haveCastle && this.isAdjacentToCastle()) { //get out of the way
-				
-			}
+		if (me.unit==SPECS.PREACHER) { //preacher
+//			if (!this.haveCastle) {
+//				this.locateNearbyCastle();
+//			}
+//			if (this.haveCastle && this.isAdjacentToCastle()) { //get out of the way
+//				
+//			}
 			if (fuel >= 15) { //TODO: optimize attack
 				HashSet<Robot> enemies = findBadGuys();
-				Robot targetBadGuy = findPrimaryEnemyHealth(enemies);
+				Robot targetBadGuy = this.findPrimaryEnemyDistance(enemies);
 				try {
 					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
 				} catch (Exception e) {
-
+					this.log(e.getMessage());
 				}
 			}
+		}
+		if (me.unit == SPECS.PROPHET) { //prophet
+			//lead the way for crusaders. probably needs to use signaling near crusaders because vision isn't shared
 		}
 		return null;
 	}
@@ -193,7 +215,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 	
-	//TODO update this
+	//TODO update this?
 	public void setCrusadeTarget(int interval) {
 //		this.log(this.crusadeTurns + "");
 		if (this.turn == interval) { //checks reflective vertical
@@ -734,20 +756,97 @@ public class MyRobot extends BCAbstractRobot {
 		return this.buildUnit(type, spot[0] - this.me.x, spot[1] - this.me.y);
 	}
 	
-	//should this castle make more pilgrims to sustain the crusade?
-	public boolean makeEvenMorePilgrims() {
-		int pilgrims = this.bots.get("pilgrims");
-		HashSet<int[]> karboLocations = this.getKarboniteLocations();
-		HashSet<int[]> fuelLocations = this.getFuelLocations();
-		//bots.get("crusaders")%4==0
-		return false;
+	//should this castle make pilgrims (based on number of nearby deposits)
+	public boolean makeMorePilgrims() {
+		return this.bots.get("pilgrims") < (this.closeFuelNum + this.closeKarboNum + 2)/2;
 	}
+	
+	//should this castle make more pilgrims to sustain the crusade? TODO: finish this
+	public boolean makeEvenMorePilgrims() {
+		//pilgrims mine 10 fuel per turn, so takes 10 turns to get to 100 fuel full capacity
+		//pilgrims can move 2 tiles per turn, so in 10 turns, pilgrims can move 20 tiles, thus max efficiency means a round trip of 20 tiles?
+		return this.bots.get("pilgrims") < (this.closeFuelNum + this.closeKarboNum + 2)/2 + this.farFuelNum;
+	}
+	
+	//finds the number of far away fuel deposits (fuel >= x tiles away from castle)
+	public int findFarFuelDepositNum(int x) {
+		int num = 0;
+		Iterator<int[]> iter = this.fuelLocations.iterator();
+		int[] location;
+		while (iter.hasNext()) {
+			location = iter.next();
+			num += this.findDistance(this.me, location[0], location[1]) >= x ? 1 : 0;
+		}
+		return num;
+	}
+	
+	//finds the number of close fuel deposits (fuel <= x tiles away from castle)
+	public int findCloseFuelDepositNum(int x) {
+		int num = 0;
+		Iterator<int[]> iter = this.fuelLocations.iterator();
+		int[] location;
+		while (iter.hasNext()) {
+			location = iter.next();
+			num += this.findDistance(this.me, location[0], location[1]) <= x ? 1 : 0;
+		}
+		return num;
+	}
+	
+	//finds the number of far away karbo deposits (karbo >= x tiles away from castle)
+		public int findFarKarboDepositNum(int x) {
+			int num = 0;
+			Iterator<int[]> iter = this.karboLocations.iterator();
+			int[] location;
+			while (iter.hasNext()) {
+				location = iter.next();
+				num += this.findDistance(this.me, location[0], location[1]) >= x ? 1 : 0;
+			}
+			return num;
+		}
+		
+		//finds the number of close karbo deposits (karbo <= x tiles away from castle)
+		public int findCloseKarboDepositNum(int x) {
+			int num = 0;
+			Iterator<int[]> iter = this.karboLocations.iterator();
+			int[] location;
+			while (iter.hasNext()) {
+				location = iter.next();
+				num += this.findDistance(this.me, location[0], location[1]) <= x ? 1 : 0;
+			}
+			return num;
+		}
+
+	// Finds distance squared between two robots
+		public double findDistance(Robot me, Robot opponent) {
+			int xDistance = opponent.x - me.x;
+			int yDistance = opponent.y - me.y;
+			return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+		}
+
+		// Finds distance squared between a robot and a pair of coordinates
+		public double findDistance(Robot me, int x, int y) {
+			int xDistance = x - me.x;
+			int yDistance = y - me.y;
+			return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+		}
 
 	//Pilgrims run away when they see dangerous enemies TODO: fix this
 	public Action pilgrimRunAway() {
 		HashSet<Robot> nearbyEnemies = this.findBadGuys();
 		Robot closestEnemy = this.findClosestThreat(nearbyEnemies);
 		return this.move(this.me.x - closestEnemy.x, this.me.y - closestEnemy.y); //replace with our move/pathing method later
+	}
+
+	//Finds all ally robots in vision range
+	public HashSet<Robot> findGoodGuys() {
+		HashSet<Robot> theGoodGuys = new HashSet<Robot>();
+		Robot[] visibleBots = getVisibleRobots();
+		for (int i = 0; i < visibleBots.length; i++) {
+			if (me.team == visibleBots[i].team) {
+				theGoodGuys.add(visibleBots[i]);
+			}
+		}
+		return theGoodGuys;
 	}
 
 	//Finds all enemy robots in vision range
@@ -763,19 +862,19 @@ public class MyRobot extends BCAbstractRobot {
 	}
 	
 	//Finds closest enemy robot
-	public Robot findBadGuy(HashSet<Robot> potentialEnemies) {
-		double distance=Double.MAX_VALUE;
-		Robot closeBot=null;
-		Iterator<Robot> badGuyIter=potentialEnemies.iterator();
+	public Robot findPrimaryEnemyDistance(HashSet<Robot> potentialEnemies) {
+		double distance = Double.MAX_VALUE;
+		Robot closeBot = null;
+		Iterator<Robot> badGuyIter = potentialEnemies.iterator();
 		while(badGuyIter.hasNext()) {
-			Robot aBadGuy=badGuyIter.next();
-			double badGuyDistance=findDistance(me,aBadGuy);
+			Robot aBadGuy = badGuyIter.next();
+			double badGuyDistance = findDistance(me, aBadGuy);
 //			log("Distance: "+badGuyDistance);
-			if(badGuyDistance<distance) {
+			if(badGuyDistance < distance) {
 //				log("Found closer robot");
-				distance=badGuyDistance;
+				distance = badGuyDistance;
 //				log("New closest distance: "+distance);
-				closeBot=aBadGuy;
+				closeBot = aBadGuy;
 			}
 			
 		}
@@ -787,70 +886,54 @@ public class MyRobot extends BCAbstractRobot {
 		return closeBot;
 	}
 
-	//Finds all ally robots in vision range
-	public HashSet<Robot> findGoodGuys() {
-		HashSet<Robot> theGoodGuys = new HashSet<Robot>();
-		Robot[] visibleBots = getVisibleRobots();
-		for (int i = 0; i < visibleBots.length; i++) {
-			if (me.team == visibleBots[i].team) {
-				theGoodGuys.add(visibleBots[i]);
-			}
+	//finds the closest enemy with priority by type
+	public Robot findPrimaryEnemyTypeDistance(HashSet<Robot> potentialEnemies) {
+		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
+		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PREACHER));
 		}
-		return theGoodGuys;
-	}
-
-	//finds the lowest health enemy *--- THIS DOESNT ACTUALLY WORK BECAUSE YOU CAN'T SEE ENEMY HEALTH ---*
-	public Robot findPrimaryEnemyHealth(HashSet<Robot> potentialEnemies) {
-		int lowestHealth = Integer.MAX_VALUE;
-		Robot weakestBot = null;
-		Iterator<Robot> iter = potentialEnemies.iterator();
-		while (iter.hasNext()) {
-			Robot badGuy = iter.next();
-			if (canAttack(findDistance(me, badGuy))) {
-				if (lowestHealth > badGuy.health) {
-					lowestHealth = badGuy.health;
-					weakestBot = badGuy;
-				}
-			}
+		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
 		}
-		return weakestBot;
+		if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PILGRIM));
+		}
+		if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CASTLE));
+		}
+		if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CHURCH));
+		}
+		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 	}
 
-	// Finds distance squared between two robots
-	public double findDistance(Robot me, Robot opponent) {
-		int xDistance = opponent.x - me.x;
-		int yDistance = opponent.y - me.y;
-		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
-	}
-
-	// Finds distance squared between a robot and a pair of coordinates
-	public double findDistance(Robot me, int x, int y) {
-		int xDistance = x - me.x;
-		int yDistance = y - me.y;
-		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	//finds the closest enemy that can attack
+	public Robot findClosestThreat(HashSet<Robot> potentialEnemies) {
+		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
+		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PREACHER));
+		}
+		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
+		}
+		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 	}
 
 	//checks if the robot is in attack range
 	public boolean canAttack(double distance) {
 		return this.getMinAttackRangeRadius(this.me.unit) <= distance && distance <= this.getMaxAttackRangeRadius(this.me.unit);
 	}
-
-	//finds the closest enemy
-	public Robot findPrimaryEnemyDistance(HashSet<Robot> potentialEnemies) {
-		double closestDistance = Double.MAX_VALUE;
-		Robot closestBot = null;
-		Iterator<Robot> iter = potentialEnemies.iterator();
-		while (iter.hasNext()) {
-			Robot badGuy = iter.next();
-			double distance = findDistance(me, badGuy);
-			if (canAttack(distance)) {
-				if (closestDistance > distance) {
-					closestDistance = distance;
-					closestBot = badGuy;
-				}
+	
+	//finds the optimal place for preachers to attack (for AoE to be most effective)
+	public AttackAction preacherAttack() {
+		int maxAttackRange = this.getMaxAttackRangeRadius(this.me.unit);
+		int dx = 0, dy = 0;
+		for (int i = Math.max(this.me.y - maxAttackRange, 0); i < Math.min(this.me.y + maxAttackRange, this.mapYSize); i++) {
+			for (int j = Math.max(this.me.x - maxAttackRange, 0); j < Math.min(this.me.x + maxAttackRange, this.mapYSize); j++) {
+				
 			}
 		}
-		return closestBot;
+		return this.attack(dx, dy);
 	}
 
 	//groups enemies by type
@@ -869,60 +952,6 @@ public class MyRobot extends BCAbstractRobot {
 			groupedEnemies.get(badGuy.unit).add(badGuy);
 		}
 		return groupedEnemies;
-	}
-
-	//finds the lowest health enemy with priority by type *--- THIS DOESNT ACTUALLY WORK BECAUSE YOU CAN'T SEE ENEMY HEALTH ---*
-	public Robot findPrimaryEnemyTypeHealth(HashSet<Robot> potentialEnemies) {
-		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
-		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
-			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PREACHER));
-		}
-		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
-			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CRUSADER));
-		}
-		if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
-			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PILGRIM));
-		}
-		if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
-			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CASTLE));
-		}
-		if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
-			return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.CHURCH));
-		}
-		return findPrimaryEnemyHealth(groupedEnemies.get(SPECS.PROPHET));
-	}
-	
-	//finds the closest enemy with priority by type
-		public Robot findPrimaryEnemyTypeDistance(HashSet<Robot> potentialEnemies) {
-			HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
-			if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
-				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PREACHER));
-			}
-			if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
-				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
-			}
-			if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
-				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PILGRIM));
-			}
-			if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
-				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CASTLE));
-			}
-			if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
-				return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CHURCH));
-			}
-			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
-		}
-
-	//finds the closest enemy that can attack
-	public Robot findClosestThreat(HashSet<Robot> potentialEnemies) {
-		HashMap<Integer, HashSet<Robot>> groupedEnemies = groupByType(potentialEnemies);
-		if (!groupedEnemies.get(SPECS.PREACHER).isEmpty()) {
-			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PREACHER));
-		}
-		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
-			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
-		}
-		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 	}
 
 	//can this unit be built? do we have enough fuel and karbonite?
