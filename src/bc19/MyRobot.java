@@ -33,6 +33,9 @@ public class MyRobot extends BCAbstractRobot {
 		turn++;
 		if (turn == 1)
 		{
+			//gets radius and not radius^2
+//			this.log(this.getMovementRangeRadius(this.me.unit) + "");
+			
 			//gets maps
 			passableMap = getPassableMap();
 			karboniteMap = getKarboniteMap();
@@ -194,7 +197,7 @@ public class MyRobot extends BCAbstractRobot {
 				try {
 					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
 				} catch (Exception e) {
-					this.log(e.getMessage());
+//					this.log(e.getMessage());
 				}
 			}
 		}
@@ -924,13 +927,14 @@ public class MyRobot extends BCAbstractRobot {
 		return this.getMinAttackRangeRadius(this.me.unit) <= distance && distance <= this.getMaxAttackRangeRadius(this.me.unit);
 	}
 	
-	//finds the optimal place for preachers to attack (for AoE to be most effective)
+	//finds the optimal place for preachers to attack (for AoE to be most effective) //TODO: finish this
 	public AttackAction preacherAttack() {
 		int maxAttackRange = this.getMaxAttackRangeRadius(this.me.unit);
 		int dx = 0, dy = 0;
+		int[][] weightedMap = new int[this.getVisionRangeRadius(this.me.unit)*2+1][this.getVisionRangeRadius(this.me.unit)*2+1]; //size of vision radius
+//		this.visibleRobotMap
 		for (int i = Math.max(this.me.y - maxAttackRange, 0); i < Math.min(this.me.y + maxAttackRange, this.mapYSize); i++) {
 			for (int j = Math.max(this.me.x - maxAttackRange, 0); j < Math.min(this.me.x + maxAttackRange, this.mapYSize); j++) {
-				
 			}
 		}
 		return this.attack(dx, dy);
@@ -961,17 +965,22 @@ public class MyRobot extends BCAbstractRobot {
 
 	//gets the movement speed radius of a unit
 	public int getMovementRangeRadius(int unit) {
-		return (int)Math.sqrt(SPECS.UNITS[unit].SPEED);
+		return SPECS.UNITS[unit].SPEED;
 	}
 
 	//gets the minimum attack range radius of a unit
 	public int getMinAttackRangeRadius(int unit) {
-		return (int)Math.sqrt(SPECS.UNITS[unit].ATTACK_RADIUS[0]);
+		return SPECS.UNITS[unit].ATTACK_RADIUS[0];
 	}
 
 	//gets the maximum attack range radius of a unit
 	public int getMaxAttackRangeRadius(int unit) {
-		return (int)Math.sqrt(SPECS.UNITS[unit].ATTACK_RADIUS[1]);
+		return SPECS.UNITS[unit].ATTACK_RADIUS[1];
+	}
+	
+	//gets the vision range radius of a unit
+	public int getVisionRangeRadius(int unit) {
+		return SPECS.UNITS[unit].VISION_RADIUS;
 	}
 
 }
