@@ -196,11 +196,10 @@ public class MyRobot extends BCAbstractRobot {
 	//Loop through various locations, and try to attack there
 	
 	public AttackAction preacherAttack(Robot me, HashSet<Robot> potentialEnemies) {
-		HashSet<Robot> enemies=findBadGuys();
-		Robot targetBadGuy=findBadGuy(me,enemies);
-		while(targetBadGuy==null||enemies.size()>0) {
-			enemies.remove(targetBadGuy);
-			targetBadGuy=findBadGuy(me,enemies);
+		Robot targetBadGuy=findBadGuy(me,potentialEnemies);
+		while(targetBadGuy==null||potentialEnemies.size()>0) {
+			potentialEnemies.remove(targetBadGuy);
+			targetBadGuy=findBadGuy(me,potentialEnemies);
 		}
 		int xDistance=targetBadGuy.x-me.x;
 		int yDistance=targetBadGuy.y-me.y;
