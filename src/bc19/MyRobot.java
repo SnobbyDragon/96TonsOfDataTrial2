@@ -8,30 +8,72 @@ import java.util.Iterator;
 
 public class MyRobot extends BCAbstractRobot {
 	public class Point {
-		public int x;
-		public int y;
+        public int x;
+        public int y;
 
-		public Point() {
-			
-		}
-		
-		public Point(int x, int y) {
-			setPoint(x, y);
-		}
+        public Point() {
+            
+        }
+        
+        public Point(int x, int y) {
+            setPoint(x, y);
+        }
 
-		public void setPoint(int x, int y) {
-			this.x = x;
-			this.y = y;
-		}
+        public void setPoint(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
 
-		public int getX() {
-			return this.x;
-		}
+        public int getX() {
+            return this.x;
+        }
 
-		public int getY() {
-			return this.y;
-		}
-	}
+        public int getY() {
+            return this.y;
+        }
+        
+        public boolean equals(Point p) {
+            if((this.getX()==p.getX())&&(this.getY()==p.getY())) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+	public class BFSPoint extends Point{
+        public boolean visited,passable;
+        public BFSPoint lastPoint;
+        
+        public BFSPoint() {
+            super();
+        }
+        
+        public BFSPoint (int x, int y, BFSPoint last) {
+            super(x,y);
+            setPassable();
+            this.lastPoint = last;
+        }
+        
+        public void setPassable() {
+            int[][] visibleBots = getVisibleRobotMap();
+            boolean[][] pmap = getPassableMap();
+            passable = pmap[super.getY()][super.getX()]&&(visibleBots[super.getY()][super.getX()]<=0);
+            //doesnt know if tile out of sight is occupied, so it assumes its passable
+        }
+        
+        public boolean isFinalLoc(int[] targetLoc){
+            visited = true;
+            if(targetLoc[0]==super.getX()&&targetLoc[1]==super.getY()) {
+                return true;
+            }
+            return false;
+        }
+        
+        public BFSPoint last() {
+            return lastPoint;
+        }  
+    }
+
 	public int turn;
 	public final int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
 	public boolean[][] passableMap;
@@ -53,6 +95,8 @@ public class MyRobot extends BCAbstractRobot {
 	public Point crusaderTarget = new Point(); //location of crusader target
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>(); //castles know what bots they have created
 	public boolean crusadeMode = false; //are we in full attack mode
+	public Point closestKarbonite; // the closest karbonite point for pilgrims
+	public Point closestFuel; // the closest fuel point for pilgrims
 
 	public Action turn() {
 		turn++;
@@ -103,6 +147,7 @@ public class MyRobot extends BCAbstractRobot {
 			this.crusadeMode = true;
 		}
 		if (me.unit == SPECS.CASTLE) { //castle
+		
 			if (this.karbonite > 40 && this.turn <= 3) { //preachers to protect in the beginning
 				if (this.canBuild(SPECS.PREACHER)) {
 					bots.put("preachers", bots.get("preachers") + 1);
@@ -176,17 +221,25 @@ public class MyRobot extends BCAbstractRobot {
 				return pathFind(castleLocation);
 			}
 			else {
-				Point closestKarbonite = this.searchForKarboniteLocation();
-				Point closestFuel = this.searchForFuelLocation();
+				log("into pathfinding pilgrim shit");
+				if(closestKarbonite == null) {
+					log("no closest karb");
+					closestKarbonite = this.searchForKarboniteLocation();
+				}
+				if(closestFuel == null) {
+					log("no closest fuel");
+					closestFuel = this.searchForFuelLocation();
+				}
 				//				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
 				if (crusadeMode || findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()) >= findDistance(this.me, closestFuel.getX(), closestFuel.getY())) {
+					log("looking for karb");
 					return pathFind(closestFuel);
 				}
 				else {
+					log("looking for fuel");
 					return pathFind(closestKarbonite);
 				}
 			}
-			
 		}
 		if (me.unit == SPECS.CRUSADER) { 
 			//crusader
