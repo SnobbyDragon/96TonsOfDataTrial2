@@ -7,12 +7,28 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 public class MyRobot extends BCAbstractRobot {
-	public int turn = 0;
-	private int lastHealth;
-	public boolean[][] karboniteMap = getKarboniteMap();
-	public boolean[][] passableMap = getPassableMap();
-	public boolean[][] fuelMap = getFuelMap();
-	private String lastMove;
+	public int turn;
+	public final int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
+	public ArrayList<Point> path = new ArrayList<Point>();
+	public boolean[][] passableMap;
+	public int[][] visibleRobotMap;
+	public boolean[][] karboniteMap;
+	public boolean[][] fuelMap;
+	public int mapYSize, mapXSize; //size of the map, length y and length x
+	public HashSet<Point> karboLocations;
+	public HashSet<Point> fuelLocations;
+	public int karboDepositNum;
+	public int fuelDepositNum;
+	public int closeKarboNum, farKarboNum;
+	public int closeFuelNum, farFuelNum;
+	public final int CLOSE = 5, FAR = 10;
+	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
+	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
+	public boolean haveCastle = false;
+	public Point castleLocation = new Point(); //location of castle
+	public Point crusaderTarget = new Point(); //location of crusader target
+	public HashMap<String, Integer> bots = new HashMap<String, Integer>(); //castles know what bots they have created
+	public boolean crusadeMode = false; //are we in full attack mode
 
 	public class Point {
         public int x;
