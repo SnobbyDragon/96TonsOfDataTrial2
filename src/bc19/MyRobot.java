@@ -73,6 +73,7 @@ public class MyRobot extends BCAbstractRobot {
 	public int closeFuelNum, farFuelNum;
 	public final int CLOSE = 5, FAR = 10;
 	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
+	public Point[] adjacents = new Point[] {new Point(1,0), new Point(1,1), new Point(0,1), new Point(-1,1), new Point(-1,0), new Point(-1,-1), new Point(0,-1), new Point(1,-1)};
 	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
 	public boolean haveCastle = false;
 	public Point castleLocation = new Point(); //location of castle
@@ -122,6 +123,9 @@ public class MyRobot extends BCAbstractRobot {
 			//this.logMap(this.karboniteMap);
 		}
 		visibleRobotMap = this.getVisibleRobotMap(); //get visible robots every turn
+		if (me.unit != SPECS.CASTLE) { //dead??
+			this.impendingDoom();
+		}
 		if (me.unit == SPECS.CASTLE) { //castle
 			if (this.me.castle_talk > 0) { //something died
 				int unit = this.me.castle_talk;
@@ -209,11 +213,15 @@ public class MyRobot extends BCAbstractRobot {
 			else { //TODO focus more on karbo than fuel
 				Point closestKarbonite = this.searchForKarboniteLocation();
 				Point closestFuel = this.searchForFuelLocation();
-				//				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-				if (findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()) > findDistance(this.me, closestFuel.getX(), closestFuel.getY())) {
+//				this.log("karbo distance=" + findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()));
+//				this.log("fuel distance=" + findDistance(this.me, closestFuel.getX(), closestFuel.getY()));
+//				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
+				if (this.karbonite > 20 && findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()) > findDistance(this.me, closestFuel.getX(), closestFuel.getY())) {
+					this.log("getting fuel");
 					return this.pathFind(closestFuel);
 				}
 				else {
+					this.log("getting karbo");
 					return this.pathFind(closestKarbonite);
 				}
 			}
@@ -230,20 +238,20 @@ public class MyRobot extends BCAbstractRobot {
 				if (enemies.isEmpty() && this.fuel > 100) {
 					return this.pathFind(crusaderTarget);
 				}
-//				return this.crusaderAttack(enemies);
+				return this.crusaderAttack(enemies);
 //				log("Enemies size: "+enemies.size());
-				Robot closeBadGuy = findPrimaryEnemyTypeDistance(enemies);
-				try {
+//				Robot closeBadGuy = findPrimaryEnemyTypeDistance(enemies);
+//				try {
 //					log("Other bad guy data " + closeBadGuy.x);
-					return attack(closeBadGuy.x - me.x,closeBadGuy.y - me.y);
-				} catch (Exception e) {
+//					return attack(closeBadGuy.x - me.x,closeBadGuy.y - me.y);
+//				} catch (Exception e) {
 //					log("Can't attack the man");
-					try {
-						return pathFind(new Point(closeBadGuy.x, closeBadGuy.y));
-					} catch (Exception ef) {
+//					try {
+//						return pathFind(new Point(closeBadGuy.x, closeBadGuy.y));
+//					} catch (Exception ef) {
 //						log("Can't find the man");
-					}
-				}
+//					}
+//				}
 			}
 		}
 		if (me.unit==SPECS.PREACHER) { //preacher
@@ -266,6 +274,9 @@ public class MyRobot extends BCAbstractRobot {
 //				this.log("on a deposit");
 //			}
 			
+			if (this.isAdjacentToCastle() || this.onFuel() || this.onKarbo()) { //next to castle, or on a deposit
+				//TODO
+			}
 			if (fuel >= 15) { //optimized attack
 				//				//investigating AoE --> 3x3 area. it's the attacked square and all the adjacents to that square
 				//				this.log(this.me.health + " health");
@@ -302,6 +313,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			Robot enemy = this.findPrimaryEnemyTypeDistance(enemies);
 			if (this.canAttack(this.findDistance(this.me, enemy))) {
+				this.log("prophet attacking");
 				return this.attack(enemy.x - this.me.x, enemy.y - this.me.y);
 			}
 		}
@@ -376,7 +388,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		
 		//Run through prophet arraylist
-		for(int i=0;i<prophets.size();i++) {
+		for (int i=0;i<prophets.size();i++) {
 			Robot theProphet=prophets.get(i);
 			int distanceX=theProphet.x-me.x;
 			int distanceY=theProphet.y-me.y;
@@ -388,7 +400,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		
 		//If attack fails, return move towards prophets
-		for(int i = 0; i < prophets.size(); i++) {
+		for (int i = 0; i < prophets.size(); i++) {
 			Robot theProphet=prophets.get(i);
 //			int distanceX=theProphet.x-me.x;
 //			int distanceY=theProphet.y-me.y;
@@ -397,7 +409,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		
 		//Run through crusader arraylist
-		for(int i=0;i<crusaders.size();i++) {
+		for (int i=0;i<crusaders.size();i++) {
 			Robot theCrusader=crusaders.get(i);
 			int distanceX=theCrusader.x-me.x;
 			int distanceY=theCrusader.y-me.y;
@@ -409,7 +421,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		
 		//Run through castle arraylist
-		for(int i=0;i<castles.size();i++) {
+		for (int i=0;i<castles.size();i++) {
 			Robot theCastle=castles.get(i);
 			int distanceX=theCastle.x-me.x;
 			int distanceY=theCastle.y-me.y;
@@ -603,7 +615,19 @@ public class MyRobot extends BCAbstractRobot {
 	
 	//signals castle it's gonna die, so castle can make a new one
 	public void impendingDoom() {
-		this.castleTalk(this.me.unit);
+		HashSet<Robot> enemies = this.findBadGuys();
+		Iterator<Robot> iter = enemies.iterator();
+		int totalDamage = 0;
+		Robot enemy;
+		while (iter.hasNext()) {
+			enemy = iter.next();
+			if (this.canAttack(enemy, this.findDistance(this.me, enemy))) {
+				totalDamage += this.getAttackDamage(enemy.unit);
+			}
+		}
+		if (totalDamage >= this.me.health) {
+			this.castleTalk(this.me.unit);
+		}
 	}
 
 	//Can this pilgrim give stuff to the castle
@@ -951,6 +975,7 @@ public class MyRobot extends BCAbstractRobot {
 		return Math.abs(this.me.x-this.castleLocation.getX())==1 && Math.abs(this.me.y-this.castleLocation.getY())==1;
 	}
 
+	//TODO implement with the adjacents[] points?
 	//checks if adjacent tiles are available. used for making units. checks tiles closer to the middle of the map first. //TODO build pilgrims on deposits, and other units not on deposits. if possible
 	public Point checkAdjacentAvailable() {
 		int x = this.me.x;
@@ -1167,7 +1192,7 @@ public class MyRobot extends BCAbstractRobot {
 		return fuelLocations;
 	}
 	
-	//move. get out the way (don't crowd castles or be on deposits)
+	//move. get out the way (don't crowd castles or be on deposits) TODO
 	public MoveAction getOutTheWay() {
 		
 		return null;
@@ -1215,7 +1240,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (this.visibleRobotMap[location.getY()][location.getX()]<=0 && (location.getX()!=this.me.x&&location.getY()!=this.me.y) && distance < minDistance) {
 				minDistance = distance;
 				minXCoordinate = location.getX();
-				minYCoordinate = location.getX();
+				minYCoordinate = location.getY();
 			}
 		}
 		//		for (int i = 0; i < mapYSize; i++) {
@@ -1412,8 +1437,8 @@ public class MyRobot extends BCAbstractRobot {
 		if (!groupedEnemies.get(SPECS.CRUSADER).isEmpty()) {
 			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CRUSADER));
 		}
-		if (!groupedEnemies.get(SPECS.PILGRIM).isEmpty()) {
-			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PILGRIM));
+		if (!groupedEnemies.get(SPECS.PROPHET).isEmpty()) {
+			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
 		}
 		if (!groupedEnemies.get(SPECS.CASTLE).isEmpty()) {
 			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CASTLE));
@@ -1421,7 +1446,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (!groupedEnemies.get(SPECS.CHURCH).isEmpty()) {
 			return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.CHURCH));
 		}
-		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PROPHET));
+		return this.findPrimaryEnemyDistance(groupedEnemies.get(SPECS.PILGRIM));
 	}
 
 	//finds the closest enemy that can attack
@@ -1438,7 +1463,12 @@ public class MyRobot extends BCAbstractRobot {
 
 	//checks if the robot is in attack range
 	public boolean canAttack(double distance) {
-		return this.getMinAttackRangeRadius(this.me.unit) <= distance && distance <= this.getMaxAttackRangeRadius(this.me.unit) && this.fuel >= this.getAttackFuel(this.me.unit);
+		return this.getMinAttackRangeRadius(this.me.unit) <= Math.sqrt(distance) && Math.sqrt(distance) <= this.getMaxAttackRangeRadius(this.me.unit) && this.fuel >= this.getAttackFuel(this.me.unit);
+	}
+	
+	//other robots can attack?
+	public boolean canAttack(Robot r, double distance) {
+		return this.getMinAttackRangeRadius(r.unit) <= Math.sqrt(distance) && Math.sqrt(distance) <= this.getMaxAttackRangeRadius(r.unit);
 	}
 
 	//finds the optimal place for preachers to attack (for AoE to be most effective)
@@ -1681,7 +1711,7 @@ public class MyRobot extends BCAbstractRobot {
 		return groupedEnemies;
 	}
 
-	//can this unit be built? do we have enough fuel and karbonite?
+	//can this unit be built? do we have enough fuel and karbonite? is there room?
 	public boolean canBuild(int type) {
 		return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentAvailable()!=null;
 	}
@@ -1709,6 +1739,11 @@ public class MyRobot extends BCAbstractRobot {
 	//gets attacking fuel
 	public int getAttackFuel(int unit) {
 		return SPECS.UNITS[unit].ATTACK_FUEL_COST;
+	}
+	
+	//gets attack damage
+	public int getAttackDamage(int unit) {
+		return SPECS.UNITS[unit].ATTACK_DAMAGE;
 	}
 
 }
