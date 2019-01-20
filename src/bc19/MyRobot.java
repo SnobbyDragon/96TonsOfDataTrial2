@@ -451,7 +451,7 @@ public class MyRobot extends BCAbstractRobot {
 		a.set(i, a.get(j));
 		a.set(j, tmp);
 	}
-
+//
 	//TODO update this
 	public void setCrusadeTarget(int interval) {
 		//		this.log(this.crusadeTurns + "");
