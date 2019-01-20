@@ -252,21 +252,206 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 	}
-	/*
-	 * store all of the visible robots
-	 * Create arraylist of preachers, prophets, crusaders, castles, churches
-	 * Iterate through that list and do the following
-	 * 		Check the type
-	 * 		Based on the type, it would put it in the corresponding arraylist
-	 * 		Method would be done to keep sorting the arraylist continuously
-	 * 			Sort on distance
-	 * Run through preacher arraylist
-	 * 		Keep trying to attack them
-	 * 		If attack fails, move on
-	 * Run through prophet arraylist
-	 * 		Keep trying to attack them
-	 * 		If attack fails, return move towards them
-	 */
+	public Action crusaderAttack(HashSet<Robot> potentialEnemies) {
+		//Create arraylist of preachers, prophets, crusaders, castles, churches, pilgrims
+		ArrayList<Robot> preachers=new ArrayList<Robot>();
+		ArrayList<Robot> prophets=new ArrayList<Robot>();
+		ArrayList<Robot> crusaders=new ArrayList<Robot>();
+		ArrayList<Robot> castles=new ArrayList<Robot>();
+		ArrayList<Robot> churches=new ArrayList<Robot>();
+		ArrayList<Robot> pilgrims=new ArrayList<Robot>();
+		//Iterate through potentialEnemies and do the following
+		Iterator<Robot> potentialEnemiesIterator=potentialEnemies.iterator();
+		while(potentialEnemiesIterator.hasNext()) {
+			Robot enemy=potentialEnemiesIterator.next();
+			//Check the type
+			//Based on the type, it would put it in the corresponding arraylist
+			if(enemy.unit==SPECS.PREACHER) {
+				preachers.add(enemy);
+			} else if(enemy.unit==SPECS.PROPHET) {
+				prophets.add(enemy);
+			} else if(enemy.unit==SPECS.CRUSADER) {
+				crusaders.add(enemy);
+			} else if(enemy.unit==SPECS.CASTLE) {
+				castles.add(enemy);
+			} else if(enemy.unit==SPECS.CHURCH) {
+				churches.add(enemy);
+			} else if(enemy.unit==SPECS.PILGRIM) {
+				pilgrims.add(enemy);
+			}
+		}
+		//ArrayList sorts at very end
+		preachers=sortArrayListByDistance(preachers);
+		prophets=sortArrayListByDistance(prophets);
+		crusaders=sortArrayListByDistance(crusaders);
+		castles=sortArrayListByDistance(castles);
+		churches=sortArrayListByDistance(churches);
+		pilgrims=sortArrayListByDistance(pilgrims);
+		
+		//sortArrayListByDistance(ArrayList<Robot> robots)
+		//Run through preacher arraylist
+		for(int i=0;i<preachers.size();i++) {
+			Robot thePreacher=preachers.get(i);
+			int distanceX=thePreacher.x-me.x;
+			int distanceY=thePreacher.y-me.y;
+			AttackAction potentialAttack=attack(distanceX,distanceY);
+			//Keep trying to attack them
+			if(potentialAttack!=null) {
+				return potentialAttack;
+			}
+		}
+		
+		//Run through prophet arraylist
+		for(int i=0;i<prophets.size();i++) {
+			Robot theProphet=prophets.get(i);
+			int distanceX=theProphet.x-me.x;
+			int distanceY=theProphet.y-me.y;
+			AttackAction potentialAttack=attack(distanceX,distanceY);
+			//Keep trying to attack them
+			if(potentialAttack!=null) {
+				return potentialAttack;
+			}
+		}
+		
+		//If attack fails, return move towards prophets
+		for(int i=0;i<prophets.size();i++) {
+			Robot theProphet=prophets.get(i);
+			int distanceX=theProphet.x-me.x;
+			int distanceY=theProphet.y-me.y;
+			//pathfind here
+		}
+		
+		//Run through crusader arraylist
+		for(int i=0;i<crusaders.size();i++) {
+			Robot theCrusader=crusaders.get(i);
+			int distanceX=theCrusader.x-me.x;
+			int distanceY=theCrusader.y-me.y;
+			AttackAction potentialAttack=attack(distanceX,distanceY);
+			//Keep trying to attack them
+			if(potentialAttack!=null) {
+				return potentialAttack;
+			}
+		}
+		
+		//Run through castle arraylist
+		for(int i=0;i<castles.size();i++) {
+			Robot theCastle=castles.get(i);
+			int distanceX=theCastle.x-me.x;
+			int distanceY=theCastle.y-me.y;
+			AttackAction potentialAttack=attack(distanceX,distanceY);
+			//Keep trying to attack them
+			if(potentialAttack!=null) {
+				return potentialAttack;
+			}
+		}
+		
+		//Run through church arraylist
+		for(int i=0;i<churches.size();i++) {
+			Robot theChurch=churches.get(i);
+			int distanceX=theChurch.x-me.x;
+			int distanceY=theChurch.y-me.y;
+			AttackAction potentialAttack=attack(distanceX,distanceY);
+			//Keep trying to attack them
+			if(potentialAttack!=null) {
+				return potentialAttack;
+			}
+		}
+		
+		//Run through pilgrim arraylist
+		for(int i=0;i<pilgrims.size();i++) {
+			Robot thePilgrim=pilgrims.get(i);
+			int distanceX=thePilgrim.x-me.x;
+			int distanceY=thePilgrim.y-me.y;
+			AttackAction potentialAttack=attack(distanceX,distanceY);
+			//Keep trying to attack them
+			if(potentialAttack!=null) {
+				return potentialAttack;
+			}
+		}
+		
+		//If attack fails, return move towards preachers
+		for(int i=0;i<preachers.size();i++) {
+			Robot thePreacher=preachers.get(i);
+			int distanceX=thePreacher.x-me.x;
+			int distanceY=thePreacher.y-me.y;
+			//pathfind here
+		}
+		
+		//If attack fails, return move towards crusaders
+		for(int i=0;i<crusaders.size();i++) {
+			Robot theCrusader=crusaders.get(i);
+			int distanceX=theCrusader.x-me.x;
+			int distanceY=theCrusader.y-me.y;
+			//pathfind here
+		}
+		
+		//If attack fails, return move towards castles
+		for(int i=0;i<castles.size();i++) {
+			Robot theCastles=castles.get(i);
+			int distanceX=theCastles.x-me.x;
+			int distanceY=theCastles.y-me.y;
+			//pathfind here
+		}
+		
+		//If attack fails, return move towards churches
+		for(int i=0;i<churches.size();i++) {
+			Robot theChurches=churches.get(i);
+			int distanceX=theChurches.x-me.x;
+			int distanceY=theChurches.y-me.y;
+			//pathfind here
+		}
+		
+		//If attack fails, return move towards pilgrims
+		for(int i=0;i<pilgrims.size();i++) {
+			Robot thePilgrim=pilgrims.get(i);
+			int distanceX=thePilgrim.x-me.x;
+			int distanceY=thePilgrim.y-me.y;
+			//pathfind here
+		}
+		return null;
+	}
+	
+	public ArrayList<Robot> sortArrayListByDistance(ArrayList<Robot> robots) {
+		robots=quickSort(robots,0,robots.size());
+		return robots;
+	}
+	
+	public ArrayList<Robot> quickSort(ArrayList<Robot> a, int start, int end) {
+		if(start<end) {
+			int pivot = partition(a, start, end);
+		      // sort left sublist
+		      quickSort(a,start,pivot-1);
+		      // sort the right sublist
+		      quickSort(a,pivot+1,end);
+		}
+		return a;
+	}
+	
+	public int partition(ArrayList<Robot> a, int start, int end) {
+		Robot pivot;
+		int endOfLeft;
+		int midIndex = (start+end)/2;
+		swap(a,start,midIndex); 
+		pivot=a.get(start);
+		endOfLeft=start;
+		for (int i=start+1; i<=end; i++) {
+			double aiDistance=findDistance(me,a.get(i));
+			double pivotDistance=findDistance(me,pivot);
+		      if (aiDistance<pivotDistance) {
+		           endOfLeft=endOfLeft+1;
+		           swap(a,endOfLeft,i);
+		      }
+		}
+		swap(a,start,endOfLeft);  
+		return endOfLeft;
+	}
+
+	public static void swap(ArrayList<Robot> a, int i, int j) {
+		Robot tmp = a.get(i);
+		a.set(i, a.get(j));
+		a.set(j, tmp);
+	}
+
 	//TODO update this
 	public void setCrusadeTarget(int interval) {
 		//		this.log(this.crusadeTurns + "");
