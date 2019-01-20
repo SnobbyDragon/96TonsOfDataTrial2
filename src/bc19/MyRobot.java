@@ -9,7 +9,7 @@ import java.util.Iterator;
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 	public final int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
-	public ArrayList<Point> path = new ArrayList<Point>();
+	public LinkedList<Point> path = new LinkedList<Point>();
 	public boolean[][] passableMap;
 	public int[][] visibleRobotMap;
 	public boolean[][] karboniteMap;
@@ -232,110 +232,112 @@ public class MyRobot extends BCAbstractRobot {
 
 	}
 	
-	public MoveAction pathFind(Point finalLocation) {
-        log("Target: ("+finalLocation.getX()+","+finalLocation.getY()+")");
-        log("Current: ("+me.x+","+me.y+")");
-        log("Unit: "+me.unit);
-        log("null x error? 0");
-        //      this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
-        if (fuel <= 30 || finalLocation.getX()==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
-            //          this.log("cannot move");
-            return null;
-        }
-        
-        //One set for each layer, each set stores all points in layer
-        log("null x error? 1");
-        ArrayList<HashSet<BFSPoint>> pointLayers = new ArrayList<HashSet<BFSPoint>>();
-        pointLayers.add(new HashSet<BFSPoint>());
-        pointLayers.get(0).add(new BFSPoint(this.me.x,this.me.y,null));
-        log("null x error? 2");
-        int layer = 0;
-        
-        //removed all direction stuff
-        
-        //layer number: minumum number of moves to get to that tile
-        //layer 0 is bot's current point, layer 1 is all points moveable from here, layer 2 is all possible points from all layer 1 points, etc
-        //first, checks all points in layer to see if any are the final point
-        //then, for each point in the layer, all possible moves are added to the next layer
-        //repeats until final tile is found
-        //each BFSPoint stores the last point, so from the final point, it backtracks to the first move
-        //Problems:
-        //no order of testing points
-        //only finds least # of moves, usually taking longer distances
-        
-        boolean found = false;
-        HashSet<Point> visitedPoints= new HashSet<Point>();
-        visitedPoints.add(new Point(me.x,me.y));
-        Iterator<BFSPoint> iter;
-        BFSPoint finalBFS;
-        BFSPoint current;
-        Point killme;
-        //maxDist = square root of movement speed^2
-        int maxDist=2;
-        if (me.unit == SPECS.CRUSADER) {
-            maxDist=3;
-        }
-        
-        while(!found) {
-            log("layer: "+layer);
-            //iterates through current layer, ends if target is found
-            iter=pointLayers.get(layer).iterator();
-            while(iter.hasNext()) {
-                current = iter.next();
-                if(current.equals(finalLocation)) {
-                    finalBFS=current;
-                    found = true;
-                    log("Found target, searching for move");
-                    break;
-                }
-            }
-            if(found) {
-                break;
-            }
-            
-            //creates new layer from current layer
-            pointLayers.add(new HashSet<BFSPoint>());
-            iter=pointLayers.get(layer).iterator();
-            while(iter.hasNext()) {
-                current = iter.next();
-                for(int x = -1*maxDist;x<=maxDist;x++) {
-                    for(int y = -1*maxDist;y<=maxDist;y++) {
-                        if(x*x+y*y<=maxDist*maxDist) {
-                            int newX = current.getX()+x;
-                            int newY = current.getY()+y;
-                            if((newX>=0&&newX<passableMap.length)&&(newY>=0&&newY<passableMap.length)) {
-                                if(passableMap[newY][newX]&&visibleRobotMap[newY][newX]<=0) {
-                                    killme = new Point(newX,newY);
-                                    Iterator<Point> iterPoint=visitedPoints.iterator();
-                                    boolean old = false;
-                                    while(iterPoint.hasNext()) {
-                                        if(iterPoint.next().equals(killme)) {
-                                            old = true;
-                                        }
-                                    }
-                                    if(!old){
-                                        pointLayers.get(layer+1).add(new BFSPoint(newX,newY,current));
-                                        visitedPoints.add(killme);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            layer++;
-        }
-        //nextMove is set to the most recent point, until that point is the bot's current position 
-        BFSPoint nextMove = finalBFS;
-        Point botPoint = new Point(this.me.x,this.me.y);
-        while(!(nextMove.last().equals(botPoint))) {
-            path.add(0,new Point(nextMove.getX(),nextMove.getY()));
-            nextMove = nextMove.last();
-        }
-        path.add(0,new Point(nextMove.getX(),nextMove.getY()));
-        log("moving to ("+nextMove.getX()+","+nextMove.getY()+")");
-        return move(nextMove.getX()-me.x,nextMove.getY()-me.y);
-    }
+	public MoveAction bfs(Point finalLocation) {
+		log("Target: ("+finalLocation.getX()+","+finalLocation.getY()+")");
+		log("Current: ("+me.x+","+me.y+")");
+		log("Unit: "+me.unit);
+		log("null x error? 0");
+		//		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
+		if (fuel <= 30 || finalLocation.getX()==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
+			//			this.log("cannot move");
+			return null;
+		}
+		if(!path.isEmpty()) {
+			Point p = path.removeFirst();
+			return move(p.getX()-me.x,p.getY()-me.y);
+		}
+		
+		//One set for each layer, each set stores all points in layer
+		//log("null x error? 1");
+		ArrayList<HashSet<BFSPoint>> pointLayers = new ArrayList<HashSet<BFSPoint>>();
+		pointLayers.add(new HashSet<BFSPoint>());
+		BFSPoint home = new BFSPoint(this.me.x,this.me.y,null);
+		pointLayers.get(0).add(home);
+		//log("null x error? 2");
+		int layer = 0;
+		
+		//removed all direction stuff
+		
+		//layer number: minumum number of moves to get to that tile
+		//layer 0 is bot's current point, layer 1 is all points moveable from here, layer 2 is all possible points from all layer 1 points, etc
+		//first, checks all points in layer to see if any are the final point
+		//then, for each point in the layer, all possible moves are added to the next layer
+		//repeats until final tile is found
+		//each BFSPoint stores the last point, so from the final point, it backtracks to the first move
+		//Problems:
+		//no order of testing points
+		//only finds least # of moves, usually taking longer distances
+		
+		boolean found = false;
+		HashSet<Point> visitedPoints= new HashSet<Point>();
+		visitedPoints.add(home);
+		Iterator<BFSPoint> iter;
+		BFSPoint nextMove;
+		BFSPoint current;
+		BFSPoint killme;
+		//maxDist = square root of movement speed^2
+		int maxDist=2;
+		if (me.unit == SPECS.CRUSADER) {
+			maxDist=3;
+		}
+		
+		while(!found) {
+			log("layer: "+layer);
+			//iterates through current layer, ends if target is found
+			iter=pointLayers.get(layer).iterator();
+			while(iter.hasNext()) {
+				current = iter.next();
+				if(current.equals(finalLocation)) {
+					nextMove=current;
+					found = true;
+					log("Found target, searching for move");
+					break;
+				}
+			}
+			if(found) {
+				break;
+			}
+			
+			//creates new layer from current layer
+			pointLayers.add(new HashSet<BFSPoint>());
+			iter=pointLayers.get(layer).iterator();
+			while(iter.hasNext()) {
+				current = iter.next();
+				for(int x = -1*maxDist;x<=maxDist;x++) {
+					for(int y = -1*maxDist;y<=maxDist;y++) {
+						if(x*x+y*y<=maxDist*maxDist) {
+							int newX = current.getX()+x;
+							int newY = current.getY()+y;
+							if((newX>=0&&newX<passableMap.length)&&(newY>=0&&newY<passableMap.length)) {
+								if(passableMap[newY][newX]&&visibleRobotMap[newY][newX]<=0) {
+									killme = new BFSPoint(newX,newY,current);
+									Iterator<Point> iterPoint=visitedPoints.iterator();
+									boolean old = false;
+									while(iterPoint.hasNext()) {
+										if(iterPoint.next().equals(killme)) {
+											old = true;
+										}
+									}
+									if(!old){
+										pointLayers.get(layer+1).add(killme);
+										visitedPoints.add(killme);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			layer++;
+		}
+		//nextMove is set to the most recent point, until that point is the bot's current position
+		while(!(nextMove.last().equals(home))) {
+			path.add(0,new Point(nextMove.getX(),nextMove.getY()));
+			nextMove = nextMove.last();
+		}
+		log("moving to ("+nextMove.getX()+","+nextMove.getY()+")");
+		return move(nextMove.getX()-me.x,nextMove.getY()-me.y);
+	}
 	
 	//if damage was taken, sends signal
     	//696969 is alert value :)
