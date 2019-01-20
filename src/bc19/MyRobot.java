@@ -58,13 +58,6 @@ public class MyRobot extends BCAbstractRobot {
 		turn++;
 		if (turn == 1)
 		{
-			//gets radius and not radius^2
-			//			this.log(this.getMovementRangeRadius(this.me.unit) + "");
-			//what are these numbers?
-			//			this.log("crusader=" + SPECS.CRUSADER);
-			//			this.log("preacher=" + SPECS.PREACHER);
-			//			this.log("pilgrim=" + SPECS.PILGRIM);
-
 			//gets maps
 			passableMap = getPassableMap();
 			karboniteMap = getKarboniteMap();
@@ -224,18 +217,21 @@ public class MyRobot extends BCAbstractRobot {
 				//				this.log(this.me.health + " health");
 				//				return this.attack(1, 1);
 
-//				HashSet<Robot> potentialEnemies = findBadGuys();
+				HashSet<Robot> potentialEnemies = this.findBadGuys();
+				if (potentialEnemies.size() > 0) {
+					return this.preacherAttack();
+				}
 //				AttackAction maybeSauce = preacherAttack(potentialEnemies);
 //				if (maybeSauce != null) {
 //					return maybeSauce;
 //				}
-				HashSet<Robot> enemies = findBadGuys();
-				Robot targetBadGuy = this.findPrimaryEnemyDistance(enemies);
-				try {
-					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
-				} catch (Exception e) {
-					this.log(e.getMessage());
-				}
+//				HashSet<Robot> enemies = findBadGuys();
+//				Robot targetBadGuy = this.findPrimaryEnemyDistance(enemies);
+//				try {
+//					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
+//				} catch (Exception e) {
+//					this.log(e.getMessage());
+//				}
 			}
 		}
 		if (me.unit == SPECS.PROPHET) { //prophet
@@ -251,6 +247,13 @@ public class MyRobot extends BCAbstractRobot {
 				if (map[r][c]) {
 					this.log("y=" + r + " x=" + c);
 				}
+			}
+		}
+	}
+	public void logMap(int[][] map) {
+		for (int r = 0; r < mapYSize; r++) {
+			for (int c = 0; c < mapXSize; c++) {
+				this.log(r + ", " + c + " = " + map[r][c]);
 			}
 		}
 	}
@@ -607,12 +610,6 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	//BFS pathing
-	public MoveAction bfs(int[] finalLocation) {
-
-		return null;
-	}
-
 	//can this robot move
 	public boolean canMove(int finalX, int finalY) {
 		return passableMap[finalY][finalX] && visibleRobotMap[finalY][finalX] == 0;
@@ -646,7 +643,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	//checks if adjacent tiles are available. used for making units. checks tiles closer to the middle of the map first.
-	public int[] checkAdjacentAvailable() {
+	public Point checkAdjacentAvailable() {
 		int x = this.me.x;
 		int y = this.me.y;
 		int dx = x - this.mapXSize/2;
@@ -656,15 +653,15 @@ public class MyRobot extends BCAbstractRobot {
 				if (dy > 0) { //robot is to the south of center, check up then middle then down
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x-1] && visibleRobotMap[y-1][x-1]==0) { //checks up left
-							return new int[]{x-1, y-1};
+							return new Point(x-1, y-1);
 						}
 					}
 					if (this.passableMap[y][x-1] && visibleRobotMap[y][x-1]==0) { //checks middle left
-						return new int[]{x-1, y};
+						return new Point(x-1, y);
 					}
 					if (y < mapYSize - 1) { //can check down
 						if (this.passableMap[y+1][x-1] && visibleRobotMap[y+1][x-1]==0) { //checks down left
-							return new int[]{x-1, y+1};
+							return new Point(x-1, y+1);
 						}
 					}
 				}
@@ -672,14 +669,14 @@ public class MyRobot extends BCAbstractRobot {
 					if (y > 0) { //can check up
 						if (y < mapYSize - 1) { //can check down
 							if (this.passableMap[y+1][x-1] && visibleRobotMap[y+1][x-1]==0) { //checks down left
-								return new int[]{x-1, y+1};
+								return new Point(x-1, y+1);
 							}
 						}
 						if (this.passableMap[y][x-1] && visibleRobotMap[y][x-1]==0) { //checks middle left
-							return new int[]{x-1, y};
+							return new Point(x-1, y);
 						}
 						if (this.passableMap[y-1][x-1] && visibleRobotMap[y-1][x-1]==0) { //checks up left
-							return new int[]{x-1, y-1};
+							return new Point(x-1, y-1);
 						}
 					}
 				}
@@ -687,24 +684,24 @@ public class MyRobot extends BCAbstractRobot {
 			if (dy > 0) { //robot is to the south of center, check up then down
 				if (y > 0) { //can check up
 					if (this.passableMap[y-1][x] && visibleRobotMap[y-1][x]==0) { //checks middle up
-						return new int[]{x, y-1};
+						return new Point(x, y-1);
 					}
 				}
 				if (y < mapYSize - 1) { //can check down
 					if (this.passableMap[y+1][x] && visibleRobotMap[y+1][x]==0) { //checks middle down
-						return new int[]{x, y+1};
+						return new Point(x, y+1);
 					}
 				}
 			}
 			else { //robot is to the north or level of center, check down then up
 				if (y < mapYSize - 1) { //can check down
 					if (this.passableMap[y+1][x] && visibleRobotMap[y+1][x]==0) { //checks middle down
-						return new int[]{x, y+1};
+						return new Point(x, y+1);
 					}
 				}
 				if (y > 0) { //can check up
 					if (this.passableMap[y-1][x] && visibleRobotMap[y-1][x]==0) { //checks middle up
-						return new int[]{x, y-1};
+						return new Point(x, y-1);
 					}
 				}
 			}
@@ -712,30 +709,30 @@ public class MyRobot extends BCAbstractRobot {
 				if (dy > 0) { //robot is to the south of center, check up then middle then down
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x+1] && visibleRobotMap[y-1][x+1]==0) { //checks up right
-							return new int[]{x+1, y-1};
+							return new Point(x+1, y-1);
 						}
 					}
 					if (this.passableMap[y][x+1] && visibleRobotMap[y][x+1]==0) { //checks middle right
-						return new int[]{x+1, y};
+						return new Point(x+1, y);
 					}
 					if (y < mapYSize) { //can check down
 						if (this.passableMap[y+1][x+1] && visibleRobotMap[y+1][x+1]==0) { //checks down right
-							return new int[]{x+1, y+1};
+							return new Point(x+1, y+1);
 						}
 					}
 				}
 				else { //robot is north or level of center, check down then middle then up
 					if (y < mapYSize) { //can check down
 						if (this.passableMap[y+1][x+1] && visibleRobotMap[y+1][x+1]==0) { //checks down right
-							return new int[]{x+1, y+1};
+							return new Point(x+1, y+1);
 						}
 					}
 					if (this.passableMap[y][x+1] && visibleRobotMap[y][x+1]==0) { //checks middle right
-						return new int[]{x+1, y};
+						return new Point(x+1, y);
 					}
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x+1] && visibleRobotMap[y-1][x+1]==0) { //checks up right
-							return new int[]{x+1, y-1};
+							return new Point(x+1, y-1);
 						}
 					}
 				}
@@ -746,30 +743,30 @@ public class MyRobot extends BCAbstractRobot {
 				if (dy > 0) { //robot is to the south of center, check up then middle then down
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x+1] && visibleRobotMap[y-1][x+1]==0) { //checks up right
-							return new int[]{x+1, y-1};
+							return new Point(x+1, y-1);
 						}
 					}
 					if (this.passableMap[y][x+1] && visibleRobotMap[y][x+1]==0) { //checks middle right
-						return new int[]{x+1, y};
+						return new Point(x+1, y);
 					}
 					if (y < mapYSize) { //can check down
 						if (this.passableMap[y+1][x+1] && visibleRobotMap[y+1][x+1]==0) { //checks down right
-							return new int[]{x+1, y+1};
+							return new Point(x+1, y+1);
 						}
 					}
 				}
 				else { //robot is north or level of center, check down then middle then up
 					if (y < mapYSize) { //can check down
 						if (this.passableMap[y+1][x+1] && visibleRobotMap[y+1][x+1]==0) { //checks down right
-							return new int[]{x+1, y+1};
+							return new Point(x+1, y+1);
 						}
 					}
 					if (this.passableMap[y][x+1] && visibleRobotMap[y][x+1]==0) { //checks middle right
-						return new int[]{x+1, y};
+						return new Point(x+1, y);
 					}
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x+1] && visibleRobotMap[y-1][x+1]==0) { //checks up right
-							return new int[]{x+1, y-1};
+							return new Point(x+1, y-1);
 						}
 					}
 				}
@@ -777,24 +774,24 @@ public class MyRobot extends BCAbstractRobot {
 			if (dy > 0) { //robot is to the south of center, check up then down
 				if (y > 0) { //can check up
 					if (this.passableMap[y-1][x] && visibleRobotMap[y-1][x]==0) { //checks middle up
-						return new int[]{x, y-1};
+						return new Point(x, y-1);
 					}
 				}
 				if (y < mapYSize - 1) { //can check down
 					if (this.passableMap[y+1][x] && visibleRobotMap[y+1][x]==0) { //checks middle down
-						return new int[]{x, y+1};
+						return new Point(x, y+1);
 					}
 				}
 			}
 			else { //robot is to the north or level of center, check down then up
 				if (y < mapYSize - 1) { //can check down
 					if (this.passableMap[y+1][x] && visibleRobotMap[y+1][x]==0) { //checks middle down
-						return new int[]{x, y+1};
+						return new Point(x, y+1);
 					}
 				}
 				if (y > 0) { //can check up
 					if (this.passableMap[y-1][x] && visibleRobotMap[y-1][x]==0) { //checks middle up
-						return new int[]{x, y-1};
+						return new Point(x, y-1);
 					}
 				}
 			}
@@ -802,30 +799,30 @@ public class MyRobot extends BCAbstractRobot {
 				if (dy > 0) { //robot is to the south of center, check up then middle then down
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x-1] && visibleRobotMap[y-1][x-1]==0) { //checks up left
-							return new int[]{x-1, y-1};
+							return new Point(x-1, y-1);
 						}
 					}
 					if (this.passableMap[y][x-1] && visibleRobotMap[y][x-1]==0) { //checks middle left
-						return new int[]{x-1, y};
+						return new Point(x-1, y);
 					}
 					if (y < mapYSize - 1) { //can check down
 						if (this.passableMap[y+1][x-1] && visibleRobotMap[y+1][x-1]==0) { //checks down left
-							return new int[]{x-1, y+1};
+							return new Point(x-1, y+1);
 						}
 					}
 				}
 				else { //robot is north or level of center, check down then middle then up
 					if (y < mapYSize - 1) { //can check down
 						if (this.passableMap[y+1][x-1] && visibleRobotMap[y+1][x-1]==0) { //checks down left
-							return new int[]{x-1, y+1};
+							return new Point(x-1, y+1);
 						}
 					}
 					if (this.passableMap[y][x-1] && visibleRobotMap[y][x-1]==0) { //checks middle left
-						return new int[]{x-1, y};
+						return new Point(x-1, y);
 					}
 					if (y > 0) { //can check up
 						if (this.passableMap[y-1][x-1] && visibleRobotMap[y-1][x-1]==0) { //checks up left
-							return new int[]{x-1, y-1};
+							return new Point(x-1, y-1);
 						}
 					}
 				}
@@ -928,9 +925,9 @@ public class MyRobot extends BCAbstractRobot {
 
 	//builds a unit where available
 	public Action makeUnit(int type) {
-		int[] spot = this.checkAdjacentAvailable();
-		this.log("x=" + spot[0] + " y=" + spot[1]);
-		return this.buildUnit(type, spot[0] - this.me.x, spot[1] - this.me.y);
+		Point spot = this.checkAdjacentAvailable();
+		//this.log("x=" + spot[0] + " y=" + spot[1]);
+		return this.buildUnit(type, spot.getX() - this.me.x, spot.getY() - this.me.y);
 	}
 
 	//should this castle make pilgrims (based on number of nearby deposits)
@@ -1013,7 +1010,7 @@ public class MyRobot extends BCAbstractRobot {
 		Robot closestEnemy = this.findClosestThreat(nearbyEnemies);
 		return this.move(this.me.x - closestEnemy.x, this.me.y - closestEnemy.y); //replace with our move/pathing method later
 	}
-
+	
 	//Finds all ally robots in vision range
 	public HashSet<Robot> findGoodGuys() {
 		HashSet<Robot> theGoodGuys = new HashSet<Robot>();
@@ -1101,164 +1098,227 @@ public class MyRobot extends BCAbstractRobot {
 		return this.getMinAttackRangeRadius(this.me.unit) <= distance && distance <= this.getMaxAttackRangeRadius(this.me.unit);
 	}
 
-	//finds the optimal place for preachers to attack (for AoE to be most effective) //TODO: finish this
+	//finds the optimal place for preachers to attack (for AoE to be most effective)
 	public AttackAction preacherAttack() {
+		Robot[] robots = this.getVisibleRobots();
 		int maxAttackRange = this.getMaxAttackRangeRadius(this.me.unit);
-		int dx = 0, dy = 0;
-		int[][] weightedMap = new int[this.mapYSize][this.mapXSize]; //new int[this.getVisionRangeRadius(this.me.unit)*2+1][this.getVisionRangeRadius(this.me.unit)*2+1]; //TODO: size of vision radius. need to shift if I want to make this smaller matrix
-		for (int r = Math.max(this.me.y - maxAttackRange, 1); r < Math.min(this.me.y + maxAttackRange, this.mapYSize-1); r++) {
-			for (int c = Math.max(this.me.x - maxAttackRange, 1); c < Math.min(this.me.x + maxAttackRange, this.mapYSize-1); c++) {
-				weightedMap[r][c] = this.averageAdjacent(this.visibleRobotMap, r, c);
+//		this.log(maxAttackRange + "");
+		int x = -1, y = -1, maxValue = 0;
+		int[][] robotMap = new int[this.mapYSize][this.mapXSize];
+		for (int[] row : robotMap) {
+			Arrays.fill(row, 0);
+		}
+		for (Robot robot : robots) {
+			robotMap[robot.y][robot.x] = this.getRobotValue(robot);
+//			this.log(robotMap[robot.y][robot.x] + "");
+		}
+//		this.logMap(robotMap);
+//		int[][] weightedMap = new int[this.mapYSize][this.mapXSize]; //new int[this.getVisionRangeRadius(this.me.unit)*2+1][this.getVisionRangeRadius(this.me.unit)*2+1]; //TODO: size of vision radius. need to shift if I want to make this smaller matrix
+//		this.log((this.me.y - maxAttackRange) + " " + this.me.y + " " + (this.me.y + maxAttackRange));
+		int value;
+		for (int r = Math.max(this.me.y - maxAttackRange, 1); r < Math.min(this.me.y + maxAttackRange + 1, this.mapYSize-1); r++) {
+			for (int c = Math.max(this.me.x - maxAttackRange, 1); c < Math.min(this.me.x + maxAttackRange + 1, this.mapXSize-1); c++) {
+				//weightedMap[r][c] = this.averageAdjacent(robotMap, r, c);
+				if (this.canAttack(Math.sqrt(this.findDistance(this.me, c, r)))) {
+//					this.log("can attack");
+					value = this.sumAdjacent(robotMap, r, c);
+//					this.log(value + " x=" + c + " y=" + r + "   turn =" + this.turn);
+					if (maxValue < value) {
+						maxValue = value;
+						x = c;
+						y = r;
+					}
+				}
 			}
 		}
-		return this.attack(dx, dy);
+//		this.log("c=" + x + " r=" + y);
+		this.log("x=" + (x-this.me.x) + " y=" + (y-this.me.y));
+		return this.attack(x - this.me.x, y - this.me.y);
+	}
+	
+	//gets the robot value
+	public int getRobotValue(Robot r) {
+		if (r.team == this.me.team) { //ally
+			if (r.unit == SPECS.CASTLE) {
+				return -10; //we REALLY don't want to hit our own castles
+			}
+			if (r.unit == SPECS.PREACHER) {
+				return -4; //we really don't want to hit our own preachers
+			}
+			if (r.unit == SPECS.CRUSADER) {
+				return -3;
+			}
+			if (r.unit == SPECS.PILGRIM) {
+				return -2;
+			}
+			if (r.unit == SPECS.PROPHET) {
+				return -3;
+			}
+			return -1;
+		}
+		else { //enemy
+			if (r.unit == SPECS.CRUSADER) {
+				return 2;
+			}
+			if (r.unit == SPECS.PREACHER) {
+				return 3;
+			}
+			if (r.unit == SPECS.PILGRIM) {
+				return 1;
+			}
+			if (r.unit == SPECS.PROPHET) {
+				return 2;
+			}
+			return 1; //unlikely to see structures, but it'll just be 1
+		}
 	}
 
-	//finds the average of a 3x3 area
-	public int averageAdjacent(int[][] area, int x, int y) {
+	//finds the robot average of a 3x3 area
+	public int sumAdjacent(int[][] map, int x, int y) {
 		int sum = 0;
 		for (int i = -1; i < 2; i++) {
 			for (int j = -1; j < 2; j++) {
-				sum += area[x + i][y + j];
+				sum += map[x + i][y + j];
 			}
 		}
-		return sum/9;
+		return sum;
 	}
 
-	public AttackAction preacherAttack(HashSet<Robot> potentialEnemies) {
-		Robot targetBadGuy = this.findPrimaryEnemyDistance(potentialEnemies);
-		while(targetBadGuy == null && potentialEnemies.size() > 0) {
-			potentialEnemies.remove(targetBadGuy);
-			targetBadGuy = findPrimaryEnemyDistance(potentialEnemies);
-		}
-		if(potentialEnemies.size() == 0) {
-			return null;
-		}
-		int xDistance = targetBadGuy.x - me.x;
-		int yDistance = targetBadGuy.y - me.y;
-		double absoluteXDistance = Math.abs(xDistance);
-		double absoluteYDistance = Math.abs(yDistance);
-		double radianAngle;
-		double piHalf = Math.PI / 2;
-		double piEight = Math.PI / 8;
-		double piThreeEight = piEight * 3;
-		String optimalDirection = "";
-		if (xDistance >= 0 && yDistance <= 0) {
-			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
-			if (radianAngle >= 0 && radianAngle <= piEight) {
-				optimalDirection = "EAST";
-			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
-				optimalDirection = "NORTH";
-			} else {
-				optimalDirection = "NORTHEAST";
-			}
-		} else if (xDistance <= 0 && yDistance <= 0) {
-			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
-			if (radianAngle >= 0 && radianAngle <= piEight) {
-				optimalDirection = "WEST";
-			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
-				optimalDirection = "NORTH";
-			} else {
-				optimalDirection = "NORTHWEST";
-			}
-		} else if (xDistance <= 0 && yDistance >= 0) {
-			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
-			if (radianAngle >= 0 && radianAngle <= piEight) {
-				optimalDirection = "WEST";
-			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
-				optimalDirection = "SOUTH";
-			} else {
-				optimalDirection = "SOUTHWEST";
-			}
-		} else if (xDistance >= 0 && yDistance >= 0) {
-			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
-			if (radianAngle >= 0 && radianAngle <= piEight) {
-				optimalDirection = "EAST";
-			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
-				optimalDirection = "SOUTH";
-			} else {
-				optimalDirection = "SOUTHEAST";
-			}
-		}
-		//		int xDistance=targetBadGuy.x-me.x;
-		//		int yDistance=targetBadGuy.y-me.y;
-		AttackAction possibleAction;
-		if(optimalDirection=="NORTH") {
-			try {
-				possibleAction=attack(0, -4);
-				if(possibleAction != null) {
-					return attack(0,-4);
-				}
-			} catch (Exception e) {
-
-			}
-		} else if(optimalDirection=="NORTHEAST") {
-			try {
-				possibleAction=attack(2, -3);
-				if(possibleAction != null) {
-					return attack(2,-3);
-				}
-			} catch (Exception e) {
-
-			}
-
-		} else if(optimalDirection=="EAST") {
-			try {
-				possibleAction=attack(4, 0);
-				if(possibleAction != null) {
-					return attack(4,0);
-				}
-			} catch (Exception e) {
-
-			}
-		} else if(optimalDirection=="SOUTHEAST") {
-			try {
-				possibleAction=attack(3, 2);
-				if(possibleAction != null) {
-					return attack(3,2);
-				}
-			} catch (Exception e) {
-
-			}
-		} else if(optimalDirection=="SOUTH") {
-			try {
-				possibleAction=attack(0, 4);
-				if(possibleAction != null) {
-					return attack(0,4);
-				}
-			} catch (Exception e) {
-
-			}
-		} else if(optimalDirection=="SOUTHWEST") {
-			try {
-				possibleAction=attack(-2, 3);
-				if(possibleAction != null) {
-					return attack(-2, 3);
-				}
-			} catch (Exception e) {
-
-			}
-		} else if(optimalDirection=="WEST") {
-			try {
-				possibleAction=attack(-4, 0);
-				if(possibleAction != null) {
-					return attack(-4,0);
-				}
-			} catch (Exception e) {
-
-			}
-		} else if(optimalDirection=="NORTHWEST") {
-			try {
-				possibleAction=attack(-3, -2);
-				if(possibleAction != null) {
-					return attack(-3,-2);
-				}
-			} catch (Exception e) {
-
-			}
-		}
-		return null;
-	}
+//	//attacks as far as possible to still hit the enemy
+//	public AttackAction preacherAttack(HashSet<Robot> potentialEnemies) {
+//		Robot targetBadGuy = this.findPrimaryEnemyDistance(potentialEnemies);
+//		while(targetBadGuy == null && potentialEnemies.size() > 0) {
+//			potentialEnemies.remove(targetBadGuy);
+//			targetBadGuy = findPrimaryEnemyDistance(potentialEnemies);
+//		}
+//		if(potentialEnemies.size() == 0) {
+//			return null;
+//		}
+//		int xDistance = targetBadGuy.x - me.x;
+//		int yDistance = targetBadGuy.y - me.y;
+//		double absoluteXDistance = Math.abs(xDistance);
+//		double absoluteYDistance = Math.abs(yDistance);
+//		double radianAngle;
+//		double piHalf = Math.PI / 2;
+//		double piEight = Math.PI / 8;
+//		double piThreeEight = piEight * 3;
+//		String optimalDirection = "";
+//		if (xDistance >= 0 && yDistance <= 0) {
+//			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+//			if (radianAngle >= 0 && radianAngle <= piEight) {
+//				optimalDirection = "EAST";
+//			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+//				optimalDirection = "NORTH";
+//			} else {
+//				optimalDirection = "NORTHEAST";
+//			}
+//		} else if (xDistance <= 0 && yDistance <= 0) {
+//			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+//			if (radianAngle >= 0 && radianAngle <= piEight) {
+//				optimalDirection = "WEST";
+//			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+//				optimalDirection = "NORTH";
+//			} else {
+//				optimalDirection = "NORTHWEST";
+//			}
+//		} else if (xDistance <= 0 && yDistance >= 0) {
+//			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+//			if (radianAngle >= 0 && radianAngle <= piEight) {
+//				optimalDirection = "WEST";
+//			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+//				optimalDirection = "SOUTH";
+//			} else {
+//				optimalDirection = "SOUTHWEST";
+//			}
+//		} else if (xDistance >= 0 && yDistance >= 0) {
+//			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+//			if (radianAngle >= 0 && radianAngle <= piEight) {
+//				optimalDirection = "EAST";
+//			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+//				optimalDirection = "SOUTH";
+//			} else {
+//				optimalDirection = "SOUTHEAST";
+//			}
+//		}
+//		//		int xDistance=targetBadGuy.x-me.x;
+//		//		int yDistance=targetBadGuy.y-me.y;
+//		AttackAction possibleAction;
+//		if(optimalDirection=="NORTH") {
+//			try {
+//				possibleAction=attack(0, -4);
+//				if(possibleAction != null) {
+//					return attack(0,-4);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		} else if(optimalDirection=="NORTHEAST") {
+//			try {
+//				possibleAction=attack(2, -3);
+//				if(possibleAction != null) {
+//					return attack(2,-3);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//
+//		} else if(optimalDirection=="EAST") {
+//			try {
+//				possibleAction=attack(4, 0);
+//				if(possibleAction != null) {
+//					return attack(4,0);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		} else if(optimalDirection=="SOUTHEAST") {
+//			try {
+//				possibleAction=attack(3, 2);
+//				if(possibleAction != null) {
+//					return attack(3,2);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		} else if(optimalDirection=="SOUTH") {
+//			try {
+//				possibleAction=attack(0, 4);
+//				if(possibleAction != null) {
+//					return attack(0,4);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		} else if(optimalDirection=="SOUTHWEST") {
+//			try {
+//				possibleAction=attack(-2, 3);
+//				if(possibleAction != null) {
+//					return attack(-2, 3);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		} else if(optimalDirection=="WEST") {
+//			try {
+//				possibleAction=attack(-4, 0);
+//				if(possibleAction != null) {
+//					return attack(-4,0);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		} else if(optimalDirection=="NORTHWEST") {
+//			try {
+//				possibleAction=attack(-3, -2);
+//				if(possibleAction != null) {
+//					return attack(-3,-2);
+//				}
+//			} catch (Exception e) {
+//
+//			}
+//		}
+//		return null;
+//	}
 
 	//groups enemies by type
 	public HashMap<Integer, HashSet<Robot>> groupByType(HashSet<Robot> potentialEnemies) {
@@ -1285,22 +1345,22 @@ public class MyRobot extends BCAbstractRobot {
 
 	//gets the movement speed radius of a unit
 	public int getMovementRangeRadius(int unit) {
-		return SPECS.UNITS[unit].SPEED;
+		return (int)Math.sqrt(SPECS.UNITS[unit].SPEED);
 	}
 
 	//gets the minimum attack range radius of a unit
 	public int getMinAttackRangeRadius(int unit) {
-		return SPECS.UNITS[unit].ATTACK_RADIUS[0];
+		return (int)Math.sqrt(SPECS.UNITS[unit].ATTACK_RADIUS[0]);
 	}
 
 	//gets the maximum attack range radius of a unit
 	public int getMaxAttackRangeRadius(int unit) {
-		return SPECS.UNITS[unit].ATTACK_RADIUS[1];
+		return (int)Math.sqrt(SPECS.UNITS[unit].ATTACK_RADIUS[1]);
 	}
 
 	//gets the vision range radius of a unit
 	public int getVisionRangeRadius(int unit) {
-		return SPECS.UNITS[unit].VISION_RADIUS;
+		return (int)Math.sqrt(SPECS.UNITS[unit].VISION_RADIUS);
 	}
 
 }
