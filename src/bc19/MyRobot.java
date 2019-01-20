@@ -161,10 +161,10 @@ public class MyRobot extends BCAbstractRobot {
 				return pathFind(castleLocation);
 			}
 			else {
-				if(closestKarbonite.equals(null)) {
+				if(closestKarbonite==(null)) {
 					closestKarbonite = this.searchForKarboniteLocation();
 				}
-				if(closestFuel.equals(null)) {
+				if(closestFuel==(null)) {
 					closestFuel = this.searchForFuelLocation();
 				}
 				//				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
@@ -229,17 +229,10 @@ public class MyRobot extends BCAbstractRobot {
 				//				this.log(this.me.health + " health");
 				//				return this.attack(1, 1);
 
-//				HashSet<Robot> potentialEnemies = findBadGuys();
-//				AttackAction maybeSauce = preacherAttack(potentialEnemies);
-//				if (maybeSauce != null) {
-//					return maybeSauce;
-//				}
-				HashSet<Robot> enemies = findBadGuys();
-				Robot targetBadGuy = this.findPrimaryEnemyDistance(enemies);
-				try {
-					return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
-				} catch (Exception e) {
-					this.log(e.getMessage());
+				HashSet<Robot> potentialEnemies = findBadGuys();
+				AttackAction maybeSauce = preacherAttack(potentialEnemies);
+				if (maybeSauce != null) {
+					return maybeSauce;
 				}
 			}
 		}
@@ -259,7 +252,21 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 	}
-
+	/*
+	 * store all of the visible robots
+	 * Create arraylist of preachers, prophets, crusaders, castles, churches
+	 * Iterate through that list and do the following
+	 * 		Check the type
+	 * 		Based on the type, it would put it in the corresponding arraylist
+	 * 		Method would be done to keep sorting the arraylist continuously
+	 * 			Sort on distance
+	 * Run through preacher arraylist
+	 * 		Keep trying to attack them
+	 * 		If attack fails, move on
+	 * Run through prophet arraylist
+	 * 		Keep trying to attack them
+	 * 		If attack fails, return move towards them
+	 */
 	//TODO update this
 	public void setCrusadeTarget(int interval) {
 		//		this.log(this.crusadeTurns + "");
