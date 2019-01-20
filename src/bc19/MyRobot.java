@@ -97,6 +97,18 @@ public class MyRobot extends BCAbstractRobot {
         
         
     }
+	//finds axis of reflection
+	public String reflectAxis(){
+        for(int col=0;col<map.length/2+1;col++){
+            for(int row = 0;row<map.length;row++){
+                if(map[row][col]!=map[row][map.length-1-col]){
+                    log(col+" "+row);
+                    return "reflected across x-axis";
+                }
+            }
+        }
+        return "reflected across y-axis";
+    }
 
 	public Action turn() {
 		turn++;
