@@ -536,9 +536,10 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		int xDistance = finalLocation.getX() - me.x;
 		int yDistance = finalLocation.getY() - me.y;
-		MoveAction easyMove=move(xDistance,yDistance);
-		if(easyMove!=null) {
-			return easyMove;
+		try {
+			return move(xDistance,yDistance);
+		} catch (Exception e) {
+			
 		}
 		int quadrant;
 		double absoluteXDistance = Math.abs(xDistance);
