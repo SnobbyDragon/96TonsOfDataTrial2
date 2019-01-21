@@ -1523,5 +1523,288 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return null;
 	}
+	
+		public MoveAction pathFind(Point finalLocation) {
+		// this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
+		if (fuel <= 30 || finalLocation.getX() == -1) { // not enough fuel, or -1 b/c can't find karbo or fuel
+			// this.log("cannot move");
+			return null;
+		}
+		int xDistance = finalLocation.getX() - me.x;
+		int yDistance = finalLocation.getY() - me.y;
+		try {
+			return move(xDistance,yDistance);
+		} catch (Exception e) {
+			
+		}
+		int quadrant;
+		double absoluteXDistance = Math.abs(xDistance);
+		double absoluteYDistance = Math.abs(yDistance);
+		double radianAngle;
+		double piHalf = Math.PI / 2;
+		double piEight = Math.PI / 8;
+		double piThreeEight = piEight * 3;
+		String optimalDirection = "";
+		if (xDistance >= 0 && yDistance <= 0) {
+			quadrant = 1;
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "EAST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "NORTH";
+			} else {
+				optimalDirection = "NORTHEAST";
+			}
+		} else if (xDistance <= 0 && yDistance <= 0) {
+			quadrant = 2;
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "WEST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "NORTH";
+			} else {
+				optimalDirection = "NORTHWEST";
+			}
+		} else if (xDistance <= 0 && yDistance >= 0) {
+			quadrant = 3;
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "WEST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "SOUTH";
+			} else {
+				optimalDirection = "SOUTHWEST";
+			}
+		} else if (xDistance >= 0 && yDistance >= 0) {
+			quadrant = 4;
+			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
+			if (radianAngle >= 0 && radianAngle <= piEight) {
+				optimalDirection = "EAST";
+			} else if (radianAngle >= piThreeEight && radianAngle <= piHalf) {
+				optimalDirection = "SOUTH";
+			} else {
+				optimalDirection = "SOUTHEAST";
+			}
+		}
+		// Figure out what quadrant it is
+		// Based on the quadrant, find the angle
+		// Based on the angle, determine the optimal direction
+		// See if you can move in that direction
+		// If you can move, check to make sure it doesn't line up with previous
+		// locations
+		// Move, and update the previous location list
+		// See if you can jump
+		// If you can move, check to make sure it doesn't line up with previous
+		// locations
+		// Move, and update the previous location list
+		// Switch directions and repeat this whole process
+		if (me.unit == SPECS.CRUSADER) {
+			for (int i = 0; i < rotationTries.length; i++) {
+				int index = (directions.indexOf(optimalDirection) + i) % 8;
+				if (index == 0) {
+					try {
+						move(0,-3);
+					} catch (Exception e) {
+						try {
+							move(0,-2);
+						} catch (Exception ef) {
+							try {
+								move(0,-1);
+							} catch (Exception eg) {
+								
+							}
+						}
+					}
+
+				} else if (index == 1) {
+					try {
+						move(2,-2);
+					} catch (Exception e) {
+						try {
+							move(1,-1);
+						} catch (Exception ef) {
+							try {
+								move(2,-1);
+							} catch (Exception eg) {
+								try {
+									move(1,-2);
+								} catch (Exception egh) {
+									
+								}
+							}
+						}
+					}
+					
+				} else if (index == 2) {
+					try {
+						move(3,0);
+					} catch (Exception e) {
+						try {
+							move(2,0);
+						} catch (Exception ef) {
+							try {
+								move(1,0);
+							} catch (Exception eg) {
+								
+							}
+						}
+					}
+				} else if (index == 3) {
+					try {
+						move(2,2);
+					} catch (Exception e) {
+						try {
+							move(1,1);
+						} catch (Exception ef) {
+							try {
+								move(2,1);
+							} catch (Exception eg) {
+								try {
+									move(1,2);
+								} catch (Exception egh) {
+									
+								}
+							}
+						}
+					}
+				} else if (index == 4) {
+					try {
+						move(0,3);
+					} catch (Exception e) {
+						try {
+							move(0,2);
+						} catch (Exception ef) {
+							try {
+								move(0,1);
+							} catch (Exception eg) {
+								
+							}
+						}
+					}
+				} else if (index == 5) {
+					try {
+						move(-2,2);
+					} catch (Exception e) {
+						try {
+							move(-1,1);
+						} catch (Exception ef) {
+							try {
+								move(-2,1);
+							} catch (Exception eg) {
+								try {
+									move(-1,2);
+								} catch (Exception egh) {
+									
+								}
+							}
+						}
+					}
+				} else if (index == 6) {
+					try {
+						move(-3,0);
+					} catch (Exception e) {
+						try {
+							move(-2,0);
+						} catch (Exception ef) {
+							try {
+								move(-1,0);
+							} catch (Exception eg) {
+								
+							}
+						}
+					}
+				} else if (index == 7) {
+					try {
+						move(-2,-2);
+					} catch (Exception e) {
+						try {
+							move(-1,-1);
+						} catch (Exception ef) {
+							try {
+								move(-2,-1);
+							} catch (Exception eg) {
+								try {
+									move(-1,-2);
+								} catch (Exception egh) {
+									
+								}
+							}
+						}
+					}
+				}
+			}
+		} else {
+			for (int i = 0; i < rotationTries.length; i++) {
+				int index = (directions.indexOf(optimalDirection) + i) % 8;
+				if (index == 0) {
+					try {
+						move(0,-2);
+					} catch (Exception ef) {
+						try {
+							move(0,-1);
+						} catch (Exception eg) {
+							
+						}
+					}
+
+				} else if (index == 1) {
+					try {
+						move(1,-1);
+					} catch (Exception ef) {
+						
+					}
+				} else if (index == 2) {
+					try {
+						move(2,0);
+					} catch (Exception ef) {
+						try {
+							move(1,0);
+						} catch (Exception eg) {
+							
+						}
+					}
+				} else if (index == 3) {
+					try {
+						move(1,1);
+					} catch (Exception ef) {
+						
+					}
+				} else if (index == 4) {
+					try {
+						move(0,2);
+					} catch (Exception ef) {
+						try {
+							move(0,1);
+						} catch (Exception eg) {
+							
+						}
+					}
+				} else if (index == 5) {
+					try {
+						move(-1,1);
+					} catch (Exception ef) {
+						
+					}
+				} else if (index == 6) {
+					try {
+						move(-2,0);
+					} catch (Exception ef) {
+						try {
+							move(-1,0);
+						} catch (Exception eg) {
+							
+						}
+					}
+				} else if (index == 7) {
+					try {
+						move(-1,1);
+					} catch (Exception ef) {
+						
+					}
+				}
+			}
+		}
+		return null;
+	}
 
 }
