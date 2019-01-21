@@ -711,6 +711,7 @@ public class MyRobot extends BCAbstractRobot {
 		BFSPoint point;
 		BFSPoint potentialNeighbor;
 		Iterator<BFSPoint> iter;
+		BFSPoint neighbor;
 		while (!toVisit.isEmpty()) {
 			point = toVisit.poll(); //gets and removes first element to visit
 			
@@ -739,11 +740,13 @@ public class MyRobot extends BCAbstractRobot {
 				
 				//add neighboring points to be visited
 //				this.log("num neighbors " + point.neighbors.size());
-				for (BFSPoint neighbor : point.neighbors) {
+				iter = point.neighbors.iterator();
+				while (iter.hasNext()) {
 //					this.log(neighbor + "");
 //					this.log("currently at " + point + "    maybe visit " + neighbor + "    goal is " + finalLocation);
 //					this.log(!visited.contains(neighbor) + " visited contains " + neighbor);
 //					this.log(!toVisit.contains(neighbor) + " toVisit contains " + neighbor);
+					neighbor = iter.next();
 					if (!visited.contains(neighbor) && !toVisit.contains(neighbor)) { //if neighbor is neither visit, nor to be visited
 						this.log("robot at " + new Point(this.me.x, this.me.y) + "    currently check " + point + "    going to visit " + neighbor + "    goal is " + finalLocation);
 						neighbor.parent = point; //the neighbor's parent is the point we visited
