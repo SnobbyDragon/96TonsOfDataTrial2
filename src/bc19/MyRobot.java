@@ -1487,5 +1487,40 @@ public class MyRobot extends BCAbstractRobot {
 	public int getVisionRangeRadius(int unit) {
 		return SPECS.UNITS[unit].VISION_RADIUS;
 	}
+	
+		public MoveAction preacherMovesOutOfTheWay() {
+		MoveAction maybe=move(1,1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(-1,-1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(1,-1);
+		if(maybe!=null) {
+			return maybe;
+		}maybe=move(-1,1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(1,0);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(-1,0);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(0,1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(0,-1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		return null;
+	}
 
 }
