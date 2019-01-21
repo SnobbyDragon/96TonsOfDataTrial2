@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public class MyRobot extends BCAbstractRobot {
 	public class Point {
@@ -56,6 +59,24 @@ public class MyRobot extends BCAbstractRobot {
 //		}
 	}
 	
+	public class BFSPoint extends Point {
+		
+		List<BFSPoint> neighbors;
+		BFSPoint parent;
+		
+		public BFSPoint() {
+			// TODO Auto-generated constructor stub
+			neighbors = new ArrayList<BFSPoint>();
+			parent = null;
+		}
+		
+		public BFSPoint(int x, int y) {
+			super(x, y);
+			neighbors = new LinkedList<BFSPoint>();
+			parent = new BFSPoint();
+		}
+	}
+	
 	public int turn;
 	public final int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
 	public boolean[][] passableMap;
@@ -79,6 +100,7 @@ public class MyRobot extends BCAbstractRobot {
 	public Point castleLocation = new Point(); //location of castle
 	public Point crusaderTarget = new Point(); //location of crusader target
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>(); //castles know what bots they have created
+	public Queue<Point> path = new LinkedList<Point>();
 	
 	public Action turn() {
 		turn++;
@@ -217,12 +239,22 @@ public class MyRobot extends BCAbstractRobot {
 //				this.log("fuel distance=" + findDistance(this.me, closestFuel.getX(), closestFuel.getY()));
 //				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
 				if (this.karbonite > 20 && findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()) > findDistance(this.me, closestFuel.getX(), closestFuel.getY())) {
-					this.log("getting fuel");
-					return this.pathFind(closestFuel);
+//					this.log("getting fuel");
+//					return this.pathFind(closestFuel);
+					path = this.bfs(closestFuel);
 				}
 				else {
-					this.log("getting karbo");
-					return this.pathFind(closestKarbonite);
+//					this.log("getting karbo");
+//					return this.pathFind(closestKarbonite);
+					path = this.bfs(closestKarbonite);
+				}
+				if (path == null) { //you ain't going nowhere
+					//nothing for now
+					this.log("no path");
+				}
+				else {
+					Point spot = this.path.poll();
+					return this.move(spot.getX() - this.me.x, spot.getY() - this.me.y);
 				}
 			}
 		}
@@ -276,6 +308,7 @@ public class MyRobot extends BCAbstractRobot {
 			
 			if (this.isAdjacentToCastle() || this.onFuel() || this.onKarbo()) { //next to castle, or on a deposit
 				//TODO
+				return this.preacherMovesOutOfTheWay();
 			}
 			if (fuel >= 15) { //optimized attack
 				//				//investigating AoE --> 3x3 area. it's the attacked square and all the adjacents to that square
@@ -313,7 +346,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			Robot enemy = this.findPrimaryEnemyTypeDistance(enemies);
 			if (this.canAttack(this.findDistance(this.me, enemy))) {
-				this.log("prophet attacking");
+//				this.log("prophet attacking");
 				return this.attack(enemy.x - this.me.x, enemy.y - this.me.y);
 			}
 		}
@@ -338,6 +371,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 	
+	//crusaders attack TODO clogging??
 	public Action crusaderAttack(HashSet<Robot> potentialEnemies) {
 		//Create arraylist of preachers, prophets, crusaders, castles, churches, pilgrims
 		ArrayList<Robot> preachers = new ArrayList<Robot>();
@@ -665,6 +699,64 @@ public class MyRobot extends BCAbstractRobot {
 		return fuelMap[me.y][me.x] && me.fuel<100;
 	}
 	
+	//breadth first search pathing TODO finish this up
+	public Queue<Point> bfs(Point finalLocation) {
+		int speed = this.getMovementRangeRadius(this.me.unit); //movement speed
+		BFSPoint start = new BFSPoint(this.me.x, this.me.y); //starting point
+		LinkedList<BFSPoint> visited = new LinkedList<BFSPoint>(); //visited points
+		LinkedList<BFSPoint> toVisit = new LinkedList<BFSPoint>(); //points to visit
+		toVisit.add(start);
+		start.parent = null;
+		
+		BFSPoint point;
+		BFSPoint potentialNeighbor;
+		Iterator<BFSPoint> iter;
+		while (!toVisit.isEmpty()) {
+			point = toVisit.poll(); //gets and removes first element to visit
+			
+			if (point.equals(finalLocation)) { //found the final location
+				this.log("found the location!");
+				Queue<Point> path = new LinkedList<Point>();
+				while (point.parent != null) { //retraces path
+					path.add(point);
+					point.parent = point;
+				}
+				return path;
+			}
+			else { //didn't find the final location
+				visited.add(point); //add to visited points
+				
+				//gets neighbors
+				for (int i = -1*speed; i <= speed; i++) {
+					for (int j = -1*speed; j <= speed; j++) {
+						potentialNeighbor = new BFSPoint(point.getX() + i, point.getY() + j);
+						if (!(i==0&&j==0) && Math.sqrt(this.findDistance(point, potentialNeighbor)) <= speed && this.passableMap[potentialNeighbor.getY()][potentialNeighbor.getX()] && this.visibleRobotMap[potentialNeighbor.getY()][potentialNeighbor.getX()] <= 0) {
+//							this.log(finalLocation + "   " + potentialNeighbor);
+							point.neighbors.add(potentialNeighbor);
+						}
+					}
+				}
+				
+				//add neighboring points to be visited
+//				this.log("num neighbors " + point.neighbors.size());
+				for (BFSPoint neighbor : point.neighbors) {
+//					this.log(neighbor + "");
+//					this.log("currently at " + point + "    maybe visit " + neighbor + "    goal is " + finalLocation);
+//					this.log(!visited.contains(neighbor) + " visited contains " + neighbor);
+//					this.log(!toVisit.contains(neighbor) + " toVisit contains " + neighbor);
+					if (!visited.contains(neighbor) && !toVisit.contains(neighbor)) { //if neighbor is neither visit, nor to be visited
+						this.log("robot at " + new Point(this.me.x, this.me.y) + "    currently check " + point + "    going to visit " + neighbor + "    goal is " + finalLocation);
+						neighbor.parent = point; //the neighbor's parent is the point we visited
+						toVisit.add(neighbor); //we're going to visit neighbor
+					}
+				}
+//				this.log("num visiting " + toVisit.size());
+			}
+		}
+		//no path
+		return null;
+	}
+
 	//old path finding algorithm for moving
 	public MoveAction pathFind(Point finalLocation) {
 		//		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
@@ -942,8 +1034,8 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return null;
 	}
-
-	//can this robot move
+		
+		//can this robot move
 	public boolean canMove(int finalX, int finalY) {
 		return passableMap[finalY][finalX] && visibleRobotMap[finalY][finalX] == 0;
 	}
@@ -1192,9 +1284,41 @@ public class MyRobot extends BCAbstractRobot {
 		return fuelLocations;
 	}
 	
-	//move. get out the way (don't crowd castles or be on deposits) TODO
-	public MoveAction getOutTheWay() {
-		
+	
+	//gtfo preacher TODO: make this better
+	public MoveAction preacherMovesOutOfTheWay() {
+		MoveAction maybe=move(1,1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe = move(-1,-1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(1,-1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(-1,1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe = move(1,0);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe = move(-1,0);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(0,1);
+		if(maybe!=null) {
+			return maybe;
+		}
+		maybe=move(0,-1);
+		if(maybe!=null) {
+			return maybe;
+		}
 		return null;
 	}
 	
@@ -1372,6 +1496,13 @@ public class MyRobot extends BCAbstractRobot {
 		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
 	}
 
+	// Finds distance squared between two points
+	public double findDistance(Point one, Point two) {
+		int xDistance = one.getX() - two.getX();
+		int yDistance = one.getY() - two.getY();
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+	
 	//Pilgrims run away when they see dangerous enemies TODO: fix this
 	public Action pilgrimRunAway() {
 		HashSet<Robot> nearbyEnemies = this.findBadGuys();
