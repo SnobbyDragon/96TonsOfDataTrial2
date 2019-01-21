@@ -527,14 +527,19 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	//Path finding algorithm for moving
+		// Path finding algorithm for moving
 	public MoveAction pathFind(Point finalLocation) {
-		//		this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
-		if (fuel <= 30 || finalLocation.getX()==-1) { //not enough fuel, or -1 b/c can't find karbo or fuel
-			//			this.log("cannot move");
+		// this.log("moving toward x=" + finalLocation[0] + " y=" + finalLocation[1]);
+		if (fuel <= 30 || finalLocation.getX() == -1) { // not enough fuel, or -1 b/c can't find karbo or fuel
+			// this.log("cannot move");
 			return null;
 		}
 		int xDistance = finalLocation.getX() - me.x;
 		int yDistance = finalLocation.getY() - me.y;
+		MoveAction easyMove=move(xDistance,yDistance);
+		if(easyMove!=null) {
+			return easyMove;
+		}
 		int quadrant;
 		double absoluteXDistance = Math.abs(xDistance);
 		double absoluteYDistance = Math.abs(yDistance);
@@ -543,7 +548,7 @@ public class MyRobot extends BCAbstractRobot {
 		double piEight = Math.PI / 8;
 		double piThreeEight = piEight * 3;
 		String optimalDirection = "";
-		if (xDistance >= 0 && yDistance >= 0) {
+		if (xDistance >= 0 && yDistance <= 0) {
 			quadrant = 1;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -553,7 +558,7 @@ public class MyRobot extends BCAbstractRobot {
 			} else {
 				optimalDirection = "NORTHEAST";
 			}
-		} else if (xDistance <= 0 && yDistance >= 0) {
+		} else if (xDistance <= 0 && yDistance <= 0) {
 			quadrant = 2;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -563,7 +568,7 @@ public class MyRobot extends BCAbstractRobot {
 			} else {
 				optimalDirection = "NORTHWEST";
 			}
-		} else if (xDistance <= 0 && yDistance <= 0) {
+		} else if (xDistance <= 0 && yDistance >= 0) {
 			quadrant = 3;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -573,7 +578,7 @@ public class MyRobot extends BCAbstractRobot {
 			} else {
 				optimalDirection = "SOUTHWEST";
 			}
-		} else if (xDistance >= 0 && yDistance <= 0) {
+		} else if (xDistance >= 0 && yDistance >= 0) {
 			quadrant = 4;
 			radianAngle = Math.atan(absoluteYDistance / absoluteXDistance);
 			if (radianAngle >= 0 && radianAngle <= piEight) {
@@ -600,133 +605,125 @@ public class MyRobot extends BCAbstractRobot {
 			for (int i = 0; i < rotationTries.length; i++) {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
-					if (canMove(me.x, me.y + 1)) {
-						if(alreadyBeenHere(me,0,1)==false) {
-							return move(0,1);
-						}
-					} else if (canMove(me.x, me.y + 2)) {
-						if(alreadyBeenHere(me,0,2)==false) {
-							return move(0,2);
-						}
-					} else if (canMove(me.x, me.y + 3)) {
-						if(alreadyBeenHere(me,0,3)==false) {
-							return move(0,3);
-						}
+					MoveAction maybeMoveHere=move(0,-3);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(0,-2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(0,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 
 				} else if (index == 1) {
-					if (canMove(me.x + 1, me.y + 1)) {
-						if(alreadyBeenHere(me,1,1)==false) {
-							return move(1,1);
-						}
-					} else if (canMove(me.x + 2, me.y + 2)) {
-						if(alreadyBeenHere(me,2,2)==false) {
-							return move(2,2);
-						}
-					} else if (canMove(me.x + 2, me.y + 1)) {
-						if(alreadyBeenHere(me,2,1)==false) {
-							return move(2,1);
-						}
-					} else if (canMove(me.x + 1, me.y + 2)) {
-						if(alreadyBeenHere(me,1,2)==false) {
-							return move(1,2);
-						}
+					MoveAction maybeMoveHere=move(2,-2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(1,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(2,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(1,-2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 2) {
-					if (canMove(me.x + 1, me.y)) {
-						if(alreadyBeenHere(me,1,0)==false) {
-							return move(1,0);
-						}
-					} else if (canMove(me.x + 2, me.y)) {
-						if(alreadyBeenHere(me,2,0)==false) {
-							return move(2,0);
-						}
-					} else if (canMove(me.x + 3, me.y)) {
-						if(alreadyBeenHere(me,3,0)==false) {
-							return move(3,0);
-						}
+					MoveAction maybeMoveHere=move(3,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(2,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(1,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 3) {
-					if (canMove(me.x + 1, me.y - 1)) {
-						if(alreadyBeenHere(me,1,-1)==false) {
-							return move(1,-1);
-						}
-					} else if (canMove(me.x + 2, me.y - 2)) {
-						if(alreadyBeenHere(me,2,-2)==false) {
-							return move(2,-2);
-						}
-					} else if (canMove(me.x + 2, me.y - 1)) {
-						if(alreadyBeenHere(me,2,-1)==false) {
-							return move(2,-1);
-						}
-					} else if (canMove(me.x + 1, me.y - 2)) {
-						if(alreadyBeenHere(me,1,-2)==false) {
-							return move(1,-2);
-						}
+					MoveAction maybeMoveHere=move(2,2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(1,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(2,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(1,2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 4) {
-					if (canMove(me.x, me.y - 1)) {
-						if(alreadyBeenHere(me,0,-1)==false) {
-							return move(0,-1);
-						}
-					} else if (canMove(me.x, me.y - 2)) {
-						if(alreadyBeenHere(me,0,-2)==false) {
-							return move(0,-2);
-						}
-					} else if (canMove(me.x, me.y - 3)) {
-						if(alreadyBeenHere(me,0,-3)==false) {
-							return move(0,-3);
-						}
+					MoveAction maybeMoveHere=move(0,3);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(0,2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(0,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 5) {
-					if (canMove(me.x - 1, me.y - 1)) {
-						if(alreadyBeenHere(me,-1,-1)==false) {
-							return move(-1,-1);
-						}
-					} else if (canMove(me.x - 2, me.y - 2)) {
-						if(alreadyBeenHere(me,-2,-2)==false) {
-							return move(-2,-2);
-						}
-					} else if (canMove(me.x - 2, me.y - 1)) {
-						if(alreadyBeenHere(me,-2,-1)==false) {
-							return move(-2,-1);
-						}
-					} else if (canMove(me.x - 1, me.y - 2)) {
-						if(alreadyBeenHere(me,-1,-2)==false) {
-							return move(-1,-2);
-						}
+					MoveAction maybeMoveHere=move(-2,2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-1,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-2,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-1,2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 6) {
-					if (canMove(me.x - 1, me.y)) {
-						if(alreadyBeenHere(me,-1,0)==false) {
-							return move(-1,0);
-						}
-					} else if (canMove(me.x - 2, me.y)) {
-						if(alreadyBeenHere(me,-2,0)==false) {
-							return move(-2,0);
-						}
-					} else if (canMove(me.x - 3, me.y)) {
-						if(alreadyBeenHere(me,-3,0)==false) {
-							return move(-3,0);
-						}
+					MoveAction maybeMoveHere=move(-3,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-2,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-1,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 7) {
-					if (canMove(me.x - 1, me.y + 1)) {
-						if(alreadyBeenHere(me,-1,1)==false) {
-							return move(-1,1);
-						}
-					} else if (canMove(me.x - 2, me.y + 2)) {
-						if(alreadyBeenHere(me,-2,2)==false) {
-							return move(-2,2);
-						}
-					} else if (canMove(me.x - 2, me.y + 1)) {
-						if(alreadyBeenHere(me,-2,1)==false) {
-							return move(-2,1);
-						}
-					} else if (canMove(me.x - 1, me.y + 2)) {
-						if(alreadyBeenHere(me,-1,2)==false) {
-							return move(-1,2);
-						}
+					MoveAction maybeMoveHere=move(-2,-2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-1,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-2,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-1,-2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				}
 			}
@@ -734,76 +731,67 @@ public class MyRobot extends BCAbstractRobot {
 			for (int i = 0; i < rotationTries.length; i++) {
 				int index = (directions.indexOf(optimalDirection) + i) % 8;
 				if (index == 0) {
-					if (canMove(me.x, me.y + 1)) {
-						if(alreadyBeenHere(me,0,1)==false) {
-							return move(0,1);
-						}
-					} else if (canMove(me.x, me.y + 2)) {
-						if(alreadyBeenHere(me,0,2)==false) {
-							return move(0,2);
-						}
+					MoveAction maybeMoveHere=move(0,-2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(0,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 
 				} else if (index == 1) {
-					if (canMove(me.x + 1, me.y + 1)) {
-						if(alreadyBeenHere(me,1,1)==false) {
-							return move(1,1);
-						}
+					MoveAction maybeMoveHere=move(1,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 2) {
-					if (canMove(me.x + 1, me.y)) {
-						if(alreadyBeenHere(me,1,0)==false) {
-							return move(1,0);
-						}
-					} else if (canMove(me.x + 2, me.y)) {
-						if(alreadyBeenHere(me,1,0)==false) {
-							return move(1,0);
-						}
+					MoveAction maybeMoveHere=move(2,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(1,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 3) {
-					if (canMove(me.x + 1, me.y - 1)) {
-						if(alreadyBeenHere(me,1,-1)==false) {
-							return move(1,-1);
-						}
+					MoveAction maybeMoveHere=move(1,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 4) {
-					if (canMove(me.x, me.y - 1)) {
-						if(alreadyBeenHere(me,0,-1)==false) {
-							return move(0,-1);
-						}
-					} else if (canMove(me.x, me.y - 2)) {
-						if(alreadyBeenHere(me,0,-2)==false) {
-							return move(0,-2);
-						}
+					MoveAction maybeMoveHere=move(0,2);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(0,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 5) {
-					if (canMove(me.x - 1, me.y - 1)) {
-						if(alreadyBeenHere(me,-1,-1)==false) {
-							return move(-1,-1);
-						}
+					MoveAction maybeMoveHere=move(-1,1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 6) {
-					if (canMove(me.x - 1, me.y)) {
-						if(alreadyBeenHere(me,-1,0)==false) {
-							return move(-1,0);
-						}
-					} else if (canMove(me.x - 2, me.y)) {
-						if(alreadyBeenHere(me,-2,0)==false) {
-							return move(-2,0);
-						}
+					MoveAction maybeMoveHere=move(-2,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
+					}
+					maybeMoveHere=move(-1,0);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				} else if (index == 7) {
-					if (canMove(me.x - 1, me.y + 1)) {
-						if(alreadyBeenHere(me,-1,1)==false) {
-							return move(-1,1);
-						}
+					MoveAction maybeMoveHere=move(-1,-1);
+					if(maybeMoveHere!=null) {
+						return maybeMoveHere;
 					}
 				}
 			}
 		}
 		return null;
 	}
-
 	//BFS pathing
 	public MoveAction bfs(int[] finalLocation) {
 
