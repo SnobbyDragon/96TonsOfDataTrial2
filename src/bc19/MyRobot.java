@@ -710,20 +710,24 @@ public class MyRobot extends BCAbstractRobot {
 			else { //didn't find the final location, so search neighbors
 				x = current%this.mapXSize;
 				y = current/this.mapXSize;
+				outer:
 				for (int r = Math.max(x - speed, 0); r < Math.min(y + speed + 1, this.mapYSize); r++) {
 					for (int c = Math.max(x - speed, 0); c < Math.min(y + speed + 1, this.mapXSize); c++) {
-						if (Math.sqrt(this.findDistance(x, y, c, r)) <= speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) { //viable point to move to?
+						if (this.findDistance(x, y, c, r) <= speed*speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) { //viable point to move to?
 							point = r*this.mapXSize + c;
 							if (tracer.containsKey(point)) {
 								continue;
 							}
 							tracer.put(point, current);
 							toVisit.add(r*this.mapXSize + c);
+							if (point == finalLoc) {
+								break outer;
+							}
 						}
 					}
 				}
 			}
-			this.log("checking " + new Point(x, y));
+//			this.log("checking " + new Point(x, y));
 		}
 		//no path
 		return null;
@@ -1333,7 +1337,7 @@ public class MyRobot extends BCAbstractRobot {
 		while (iter.hasNext()) {
 			location = iter.next();
 			distance = findDistance(this.me, location.getX(), location.getY());
-			if (this.visibleRobotMap[location.getY()][location.getX()]<=0 && (location.getX()!=this.me.x&&location.getY()!=this.me.y) && distance < minDistance) {
+			if (this.visibleRobotMap[location.getY()][location.getX()]<=0 && distance > 0 && distance < minDistance) {
 				minDistance = distance;
 				minXCoordinate = location.getX();
 				minYCoordinate = location.getY();
@@ -1366,7 +1370,7 @@ public class MyRobot extends BCAbstractRobot {
 		while (iter.hasNext()) {
 			location = iter.next();
 			distance = findDistance(this.me, location.getX(), location.getY());
-			if (this.visibleRobotMap[location.getY()][location.getX()]<=0 && (location.getX()!=this.me.x&&location.getY()!=this.me.y) && distance < minDistance) {
+			if (this.visibleRobotMap[location.getY()][location.getX()]<=0 && distance > 0 && distance < minDistance) {
 				minDistance = distance;
 				minXCoordinate = location.getX();
 				minYCoordinate = location.getY();
