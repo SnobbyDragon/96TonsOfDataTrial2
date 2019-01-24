@@ -710,9 +710,9 @@ public class MyRobot extends BCAbstractRobot {
 			else { //didn't find the final location, so search neighbors
 				x = current%this.mapXSize;
 				y = current/this.mapXSize;
-				for (int r = Math.max(this.me.y - speed, 0); r < Math.min(this.me.y + speed + 1, this.mapYSize); r++) {
-					for (int c = Math.max(this.me.x - speed, 0); c < Math.min(this.me.x + speed + 1, this.mapXSize); c++) {
-						if (Math.sqrt(this.findDistance(x, y, c, r)) <= speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) {
+				for (int r = Math.max(x - speed, 0); r < Math.min(y + speed + 1, this.mapYSize); r++) {
+					for (int c = Math.max(x - speed, 0); c < Math.min(y + speed + 1, this.mapXSize); c++) {
+						if (Math.sqrt(this.findDistance(x, y, c, r)) <= speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) { //viable point to move to?
 							point = r*this.mapXSize + c;
 							if (tracer.containsKey(point)) {
 								continue;
@@ -723,6 +723,7 @@ public class MyRobot extends BCAbstractRobot {
 					}
 				}
 			}
+			this.log("checking " + new Point(x, y));
 		}
 		//no path
 		return null;
