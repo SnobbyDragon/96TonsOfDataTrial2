@@ -711,8 +711,8 @@ public class MyRobot extends BCAbstractRobot {
 				x = current%this.mapXSize;
 				y = current/this.mapXSize;
 				outer:
-				for (int r = Math.max(x - speed, 0); r < Math.min(y + speed + 1, this.mapYSize); r++) {
-					for (int c = Math.max(x - speed, 0); c < Math.min(y + speed + 1, this.mapXSize); c++) {
+				for (int r = Math.max(y - speed, 0); r < Math.min(y + speed + 1, this.mapYSize); r++) {
+					for (int c = Math.max(x - speed, 0); c < Math.min(x + speed + 1, this.mapXSize); c++) {
 						if (this.findDistance(x, y, c, r) <= speed*speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) { //viable point to move to?
 							point = r*this.mapXSize + c;
 							if (tracer.containsKey(point)) {
