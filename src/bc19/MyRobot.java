@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Stack;
 
 public class MyRobot extends BCAbstractRobot {
 	public class Point {
@@ -44,36 +45,18 @@ public class MyRobot extends BCAbstractRobot {
 			return "(" + this.getX() + ", " + this.getY() + ")";
 		}
 		
-//		@Override
-//		public boolean equals(Object obj) {
-//			if (obj instanceof Point) {
-//				Point p = (Point)obj;
-//				return this.getX() == p.getX() && this.getY() == p.getY();	
-//			}
-//			return false;
-//		}
-//		
-//		@Override
-//		public int hashCode() {
-//			return this.getX() + this.getY();
-//		}
-	}
-	
-	public class BFSPoint extends Point {
-		
-		List<BFSPoint> neighbors;
-		BFSPoint parent;
-		
-		public BFSPoint() {
-			// TODO Auto-generated constructor stub
-			neighbors = new ArrayList<BFSPoint>();
-			parent = null;
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof Point) {
+				Point p = (Point)obj;
+				return this.getX() == p.getX() && this.getY() == p.getY();	
+			}
+			return false;
 		}
 		
-		public BFSPoint(int x, int y) {
-			super(x, y);
-			neighbors = new LinkedList<BFSPoint>();
-			parent = new BFSPoint();
+		@Override
+		public int hashCode() {
+			return this.getX() + this.getY();
 		}
 	}
 	
@@ -100,7 +83,7 @@ public class MyRobot extends BCAbstractRobot {
 	public Point castleLocation = new Point(); //location of castle
 	public Point crusaderTarget = new Point(); //location of crusader target
 	public HashMap<String, Integer> bots = new HashMap<String, Integer>(); //castles know what bots they have created
-	public Queue<Point> path = new LinkedList<Point>();
+	public Stack<Point> path = new Stack<Point>();
 	
 	public Action turn() {
 		turn++;
@@ -253,7 +236,7 @@ public class MyRobot extends BCAbstractRobot {
 					this.log("no path");
 				}
 				else {
-					Point spot = this.path.poll();
+					Point spot = this.path.pop();
 					return this.move(spot.getX() - this.me.x, spot.getY() - this.me.y);
 				}
 			}
@@ -700,60 +683,45 @@ public class MyRobot extends BCAbstractRobot {
 	}
 	
 	//breadth first search pathing TODO finish this up
-	public Queue<Point> bfs(Point finalLocation) {
+	public Stack<Point> bfs(Point finalLocation) {
+		this.log("i am here (" + this.me.x + ", " + this.me.y + ") and going to " + finalLocation);
+//		this.log("d^2 from target " + this.findDistance(this.me, finalLocation.x, finalLocation.y));
 		int speed = this.getMovementRangeRadius(this.me.unit); //movement speed
-		BFSPoint start = new BFSPoint(this.me.x, this.me.y); //starting point
-		LinkedList<BFSPoint> visited = new LinkedList<BFSPoint>(); //visited points
-		LinkedList<BFSPoint> toVisit = new LinkedList<BFSPoint>(); //points to visit
+		int start = this.me.y*this.mapXSize + this.me.x; //starting point
+		int finalLoc = finalLocation.getY()*this.mapXSize + finalLocation.getX(); //final location
+		HashMap<Integer, Integer> tracer = new HashMap<Integer, Integer>(); //points will be represented as a single integer -> row*row.length + column
+		LinkedList<Integer> toVisit = new LinkedList<Integer>();
 		toVisit.add(start);
-		start.parent = null;
 		
-		BFSPoint point;
-		BFSPoint potentialNeighbor;
-		Iterator<BFSPoint> iter;
-		BFSPoint neighbor;
+		int current = start;
+		int x, y;
+		int point;
 		while (!toVisit.isEmpty()) {
-			point = toVisit.poll(); //gets and removes first element to visit
-			
-			if (point.equals(finalLocation)) { //found the final location
-				this.log("found the location!");
-				Queue<Point> path = new LinkedList<Point>();
-				while (point.parent != null) { //retraces path
-					path.add(point);
-					point.parent = point;
-				}
-				return path;
+			current = toVisit.poll(); //gets and removes first element to visit
+			if (current == finalLoc) { //found the final location
+				//create the path
+				Stack<Point> results = new Stack<Point>();
+			    while (tracer.containsKey(current)) { 
+			        results.add(new Point(current%this.mapXSize, current/this.mapXSize));
+			        current = tracer.get(current);
+			    }
+			    return results;
 			}
-			else { //didn't find the final location
-				visited.add(point); //add to visited points
-				
-				//gets neighbors
-				for (int i = -1*speed; i <= speed; i++) {
-					for (int j = -1*speed; j <= speed; j++) {
-						potentialNeighbor = new BFSPoint(point.getX() + i, point.getY() + j);
-						if (!(i==0&&j==0) && Math.sqrt(this.findDistance(point, potentialNeighbor)) <= speed && this.passableMap[potentialNeighbor.getY()][potentialNeighbor.getX()] && this.visibleRobotMap[potentialNeighbor.getY()][potentialNeighbor.getX()] <= 0) {
-//							this.log(finalLocation + "   " + potentialNeighbor);
-							point.neighbors.add(potentialNeighbor);
+			else { //didn't find the final location, so search neighbors
+				x = current%this.mapXSize;
+				y = current/this.mapXSize;
+				for (int r = Math.max(this.me.y - speed, 0); r < Math.min(this.me.y + speed + 1, this.mapYSize); r++) {
+					for (int c = Math.max(this.me.x - speed, 0); c < Math.min(this.me.x + speed + 1, this.mapXSize); c++) {
+						if (Math.sqrt(this.findDistance(x, y, c, r)) <= speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) {
+							point = r*this.mapXSize + c;
+							if (tracer.containsKey(point)) {
+								continue;
+							}
+							tracer.put(point, current);
+							toVisit.add(r*this.mapXSize + c);
 						}
 					}
 				}
-				
-				//add neighboring points to be visited
-//				this.log("num neighbors " + point.neighbors.size());
-				iter = point.neighbors.iterator();
-				while (iter.hasNext()) {
-//					this.log(neighbor + "");
-//					this.log("currently at " + point + "    maybe visit " + neighbor + "    goal is " + finalLocation);
-//					this.log(!visited.contains(neighbor) + " visited contains " + neighbor);
-//					this.log(!toVisit.contains(neighbor) + " toVisit contains " + neighbor);
-					neighbor = iter.next();
-					if (!visited.contains(neighbor) && !toVisit.contains(neighbor)) { //if neighbor is neither visit, nor to be visited
-						this.log("robot at " + new Point(this.me.x, this.me.y) + "    currently check " + point + "    going to visit " + neighbor + "    goal is " + finalLocation);
-						neighbor.parent = point; //the neighbor's parent is the point we visited
-						toVisit.add(neighbor); //we're going to visit neighbor
-					}
-				}
-//				this.log("num visiting " + toVisit.size());
 			}
 		}
 		//no path
@@ -1503,6 +1471,13 @@ public class MyRobot extends BCAbstractRobot {
 	public double findDistance(Point one, Point two) {
 		int xDistance = one.getX() - two.getX();
 		int yDistance = one.getY() - two.getY();
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+	
+	//Finds distance squared between two pairs of coordinates
+	public double findDistance(int x1, int y1, int x2, int y2) {
+		int xDistance = x1 - x2;
+		int yDistance = y1 - y2;
 		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
 	}
 	
