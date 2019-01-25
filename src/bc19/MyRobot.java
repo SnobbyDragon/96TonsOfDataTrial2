@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
 import java.util.Stack;
 
 public class MyRobot extends BCAbstractRobot {
@@ -213,7 +211,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			if (haveCastle && (me.karbonite==20||me.fuel==100)) {
 				//				this.log("returning to castle");
-				return this.pathFind(castleLocation);
+				path = this.bfs(castleLocation);
 			}
 			else { //TODO focus more on karbo than fuel
 				Point closestKarbonite = this.searchForKarboniteLocation();
@@ -231,14 +229,14 @@ public class MyRobot extends BCAbstractRobot {
 //					return this.pathFind(closestKarbonite);
 					path = this.bfs(closestKarbonite);
 				}
-				if (path == null) { //you ain't going nowhere
-					//nothing for now
-					this.log("no path");
-				}
-				else {
-					Point spot = this.path.pop();
-					return this.move(spot.getX() - this.me.x, spot.getY() - this.me.y);
-				}
+			}
+			if (path == null) { //you ain't going nowhere
+				//nothing for now
+				this.log("no path");
+			}
+			else {
+				Point spot = this.path.pop();
+				return this.move(spot.getX() - this.me.x, spot.getY() - this.me.y);
 			}
 		}
 		if (me.unit == SPECS.CRUSADER) { //crusader
@@ -684,6 +682,7 @@ public class MyRobot extends BCAbstractRobot {
 	
 	//breadth first search pathing TODO finish this up
 	public Stack<Point> bfs(Point finalLocation) {
+		boolean blocked = this.visibleRobotMap[finalLocation.getY()][finalLocation.getX()] > 0; //can't go there because robot is in the way
 		this.log("i am here (" + this.me.x + ", " + this.me.y + ") and going to " + finalLocation);
 //		this.log("d^2 from target " + this.findDistance(this.me, finalLocation.x, finalLocation.y));
 		int speed = this.getMovementRangeRadius(this.me.unit); //movement speed
@@ -713,16 +712,21 @@ public class MyRobot extends BCAbstractRobot {
 				outer:
 				for (int r = Math.max(y - speed, 0); r < Math.min(y + speed + 1, this.mapYSize); r++) {
 					for (int c = Math.max(x - speed, 0); c < Math.min(x + speed + 1, this.mapXSize); c++) {
+						point = r*this.mapXSize + c;
 						if (this.findDistance(x, y, c, r) <= speed*speed && this.passableMap[r][c] && this.visibleRobotMap[r][c] <= 0) { //viable point to move to?
-							point = r*this.mapXSize + c;
 							if (tracer.containsKey(point)) {
 								continue;
 							}
 							tracer.put(point, current);
 							toVisit.add(r*this.mapXSize + c);
-							if (point == finalLoc) {
+							if (point == finalLoc) { //found the point and it's not blocked
 								break outer;
 							}
+						}
+						if (blocked && point == finalLoc) { //found the point and it's blocked
+							tracer.put(point, current);
+							toVisit.add(r*this.mapXSize + c);
+							break outer;
 						}
 					}
 				}
@@ -1043,7 +1047,6 @@ public class MyRobot extends BCAbstractRobot {
 		return Math.abs(this.me.x-this.castleLocation.getX())==1 && Math.abs(this.me.y-this.castleLocation.getY())==1;
 	}
 
-	//TODO implement with the adjacents[] points?
 	//checks if adjacent tiles are available. used for making units. checks tiles closer to the middle of the map first. //TODO build pilgrims on deposits, and other units not on deposits. if possible
 	public Point checkAdjacentAvailable() {
 		int x = this.me.x;
@@ -1232,7 +1235,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return null; //surrounded by impassable terrain
 	}
-
+	
 	//returns a HashSet of all the karbo location coordinates
 	public HashSet<Point> getKarboniteLocations() {
 		HashSet<Point> karboniteLocations = new HashSet<Point>();
