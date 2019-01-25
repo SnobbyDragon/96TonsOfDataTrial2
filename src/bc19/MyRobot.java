@@ -196,7 +196,7 @@ public class MyRobot extends BCAbstractRobot {
 			//			log("My Castle Y: "+castleLocation.y);
 			//			log("My X position: "+me.x);
 			//			log("My Y position: "+me.y);
-			if (canMineFuel()||canMineKarbonite()) {
+			if (this.fuel < 500 && canMineFuel() || canMineKarbonite()) {
 				//				this.log("mining");
 				return mine();
 			}
@@ -219,7 +219,7 @@ public class MyRobot extends BCAbstractRobot {
 //				this.log("karbo distance=" + findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()));
 //				this.log("fuel distance=" + findDistance(this.me, closestFuel.getX(), closestFuel.getY()));
 //				this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-				if (this.karbonite > 20 && findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()) > findDistance(this.me, closestFuel.getX(), closestFuel.getY())) {
+				if (this.fuel < 500 && findDistance(this.me, closestKarbonite.getX(), closestKarbonite.getY()) > findDistance(this.me, closestFuel.getX(), closestFuel.getY())) {
 //					this.log("getting fuel");
 //					return this.pathFind(closestFuel);
 					path = this.bfs(closestFuel);
@@ -628,7 +628,7 @@ public class MyRobot extends BCAbstractRobot {
 		return "horizontal";
 	}
 	
-	//signals castle it's gonna die, so castle can make a new one
+	//signals castle it's gonna die, so castle can make a new one //TODO this isn't working at all
 	public void impendingDoom() {
 		HashSet<Robot> enemies = this.findBadGuys();
 		Iterator<Robot> iter = enemies.iterator();
@@ -680,7 +680,7 @@ public class MyRobot extends BCAbstractRobot {
 		return fuelMap[me.y][me.x] && me.fuel<100;
 	}
 	
-	//breadth first search pathing TODO finish this up
+	//breadth first search pathing TODO finish this up: blocked
 	public Stack<Point> bfs(Point finalLocation) {
 		boolean blocked = this.visibleRobotMap[finalLocation.getY()][finalLocation.getX()] > 0; //can't go there because robot is in the way
 		this.log("i am here (" + this.me.x + ", " + this.me.y + ") and going to " + finalLocation);
@@ -722,11 +722,6 @@ public class MyRobot extends BCAbstractRobot {
 							if (point == finalLoc) { //found the point and it's not blocked
 								break outer;
 							}
-						}
-						if (blocked && point == finalLoc) { //found the point and it's blocked
-							tracer.put(point, current);
-							toVisit.add(r*this.mapXSize + c);
-							break outer;
 						}
 					}
 				}
