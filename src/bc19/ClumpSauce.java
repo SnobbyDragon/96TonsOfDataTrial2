@@ -59,7 +59,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		quickSort(sortedResources,0,sortedResources.size());
+		quickSort(sortedResources,0,sortedResources.size()-1);
 		// At this point, sortedResources has all of the fuel and karbonite locations
 		// from the map
 		return sortedResources;
