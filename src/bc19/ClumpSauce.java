@@ -1,6 +1,8 @@
 package bc19;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
@@ -8,13 +10,15 @@ public class MyRobot extends BCAbstractRobot {
 	// int[] location is done by y then x
 
 	public Action turn() {
+		turn++;
 		if (turn == 1) {
 			clumpList = new ArrayList<ArrayList<int[]>>();
 		}
-		log("My X location: "+me.x);
-		log("My Y location: "+me.y);
-		log("" + findClump());
-		turn++;
+		log("My X location: " + me.x);
+		log("My Y location: " + me.y);
+		ArrayList<int[]> sortedResources = findSortedResources();
+		log("Sorted Resources: " + sortedResources);
+		log("Closest Clump: " + findClump(sortedResources));
 
 		return null;
 
@@ -36,7 +40,22 @@ public class MyRobot extends BCAbstractRobot {
 
 	// Once done with making a full clump, remove locations from the initial sorted
 	// ArrayList
-	public ArrayList<int[]> findClump() {
+	public HashSet<int[]> findClump(ArrayList<int[]> sortedResources) {
+		HashSet<int[]> clump = new HashSet<int[]>();
+		clump.add(sortedResources.get(0));
+		for (int i = 1; i < sortedResources.size(); i++) {
+			Iterator<int[]> clumpIterator=clump.iterator();
+			while(clumpIterator.hasNext()) {
+				int[] aClumpLocation=clumpIterator.next();
+				if(findDistance(sortedResources.get(i),aClumpLocation)<=8) {
+					clump.add(sortedResources.get(i));
+				}
+			}
+		}
+		return clump;
+	}
+
+	public ArrayList<int[]> findSortedResources() {
 		boolean[][] karboniteMap = getKarboniteMap();
 		boolean[][] fuelMap = getFuelMap();
 		ArrayList<int[]> sortedResources = new ArrayList<int[]>();
@@ -59,7 +78,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		quickSort(sortedResources,0,sortedResources.size()-1);
+		quickSort(sortedResources, 0, sortedResources.size() - 1);
 		// At this point, sortedResources has all of the fuel and karbonite locations
 		// from the map
 		return sortedResources;
@@ -83,8 +102,8 @@ public class MyRobot extends BCAbstractRobot {
 		pivot = resources.get(start);
 		endOfLeft = start;
 		for (int i = start + 1; i <= end; i++) {
-			log("Resources get i: "+resources.get(i));
-			log("Pivot: "+pivot);
+			log("Resources get i: " + resources.get(i));
+			log("Pivot: " + pivot);
 			if (findDistance(resources.get(i)) < findDistance(pivot)) {
 				endOfLeft = endOfLeft + 1;
 				swap(resources, endOfLeft, i);
@@ -99,10 +118,16 @@ public class MyRobot extends BCAbstractRobot {
 		resources.set(i, resources.get(j));
 		resources.set(j, tmp);
 	}
-	
+
 	public double findDistance(int[] location) {
 		int xDistance = location[1] - me.x;
 		int yDistance = location[0] - me.y;
 		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
-}
+	}
+	
+	public double findDistance(int[] location1,int[] location2) {
+		int xDistance = location2[1] - location1[1];
+		int yDistance = location2[0] - location1[0];
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
 }
