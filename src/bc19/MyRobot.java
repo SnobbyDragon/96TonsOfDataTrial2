@@ -60,9 +60,9 @@ public class MyRobot extends BCAbstractRobot {
             fuelDepositNum = this.fuelLocations.size();
             
             //close and far deposits
-            closeKarboNum = this.findCloseKarboDepositNum(CLOSE); //closer than 5
+            closeKarboNum = this.findCloseKarboDepositNum(CLOSE); //closer than 8
             this.log("close karbos = " + this.closeKarboNum);
-            closeFuelNum = this.findCloseFuelDepositNum(CLOSE); //closer than 5
+            closeFuelNum = this.findCloseFuelDepositNum(CLOSE); //closer than 8
             this.log("close fuel = " + this.closeFuelNum);
             
             //sets crusade target
@@ -85,7 +85,7 @@ public class MyRobot extends BCAbstractRobot {
 //                    return this.makeUnit(SPECS.PREACHER);
 //                }
 //            }
-            if (this.makeMorePilgrims()) { //|| (this.crusadeMode && this.makeEvenMorePilgrims())) { //build pilgrims //TODO too many rn
+            if (this.bots.get("pilgrims") < this.closeFuelNum + this.closeKarboNum) {
                 if (this.canBuild(SPECS.PILGRIM))  {
                     //                    log("built pilgrim at x=" + this.checkAdjacentAvailable()[0] + " y=" + this.checkAdjacentAvailable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
                     bots.put("pilgrims", bots.get("pilgrims") + 1);
@@ -157,13 +157,13 @@ public class MyRobot extends BCAbstractRobot {
                 return this.pathFind(castleLocation);
                 //                path = this.bfs(castleLocation);
             }
-            else { //TODO focus more on karbo than fuel
+            else {
                 int[] closestKarbonite = this.searchForKarboniteLocation();
                 int[] closestFuel = this.searchForFuelLocation();
                 //                this.log("karbo distance=" + findDistance(this.me, closestKarbonite[1], closestKarbonite[0]));
                 //                this.log("fuel distance=" + findDistance(this.me, closestFuel[1], closestFuel[0]));
                 //                this.log("pilgrim at x=" + this.me.x + " y=" + this.me.y + "\nkarbo at x=" + closestKarbonite[0] + " y=" + closestKarbonite[1] + "\nfuel at x=" + closestFuel[0] + " y=" + closestFuel[1]);
-                if (this.fuel < 800 && findDistance(this.me, closestKarbonite[1], closestKarbonite[0]) > findDistance(this.me, closestFuel[1], closestFuel[0])) {
+                if (findDistance(this.me, closestKarbonite[1], closestKarbonite[0]) > findDistance(this.me, closestFuel[1], closestFuel[0])) {
                     //                    this.log("getting fuel");
                     //                    return this.pathFind(closestFuel);
                     path = this.bfs(closestFuel);
@@ -227,10 +227,10 @@ public class MyRobot extends BCAbstractRobot {
             //                this.log("on a deposit");
             //            }
             
-            if (this.isAdjacentToCastle() || this.onFuel() || this.onKarbo()) { //next to castle, or on a deposit
-                //TODO
-                return this.preacherMovesOutOfTheWay();
-            }
+//            if (this.isAdjacentToCastle() || this.onFuel() || this.onKarbo()) { //next to castle, or on a deposit
+//                //TODO
+////                return this.preacherMovesOutOfTheWay();
+//            }
             if (fuel >= 15) { //optimized attack
                 //                //investigating AoE --> 3x3 area. it's the attacked square and all the adjacents to that square
                 //                this.log(this.me.health + " health");
@@ -251,9 +251,9 @@ public class MyRobot extends BCAbstractRobot {
                 //                    this.log(e.getMessage());
                 //                }
             }
-            if (this.onFuel() || this.onKarbo()) {
-                
-            }
+//            if (this.onFuel() || this.onKarbo()) {
+//                
+//            }
         }
         if (me.unit == SPECS.PROPHET) { //prophet
             HashSet<Robot> enemies = findBadGuys();
@@ -648,7 +648,7 @@ public class MyRobot extends BCAbstractRobot {
         Stack<int[]> results = new Stack<int[]>();
         while (tracer[current] != -1) {
             results.push(new int[] {current/this.mapXSize, current%this.mapXSize});
-            this.log("" + results.peek());
+//            this.log("" + results.peek());
             current = tracer[current];
         }
         return results;
@@ -1181,42 +1181,42 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     
-    //gtfo preacher TODO: make this better
-    public MoveAction preacherMovesOutOfTheWay() {
-        MoveAction maybe=move(1,1);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe = move(-1,-1);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe=move(1,-1);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe=move(-1,1);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe = move(1,0);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe = move(-1,0);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe=move(0,1);
-        if(maybe!=null) {
-            return maybe;
-        }
-        maybe=move(0,-1);
-        if(maybe!=null) {
-            return maybe;
-        }
-        return null;
-    }
+//    //gtfo preacher TODO: make this better
+//    public MoveAction preacherMovesOutOfTheWay() {
+//        MoveAction maybe=move(1,1);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe = move(-1,-1);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe=move(1,-1);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe=move(-1,1);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe = move(1,0);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe = move(-1,0);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe=move(0,1);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        maybe=move(0,-1);
+//        if(maybe!=null) {
+//            return maybe;
+//        }
+//        return null;
+//    }
     
     //is this robot on a karbo deposit
     public boolean onKarbo() {
@@ -1263,19 +1263,6 @@ public class MyRobot extends BCAbstractRobot {
                 minYCoordinate = location[0];
             }
         }
-        //        for (int i = 0; i < mapYSize; i++) {
-        //            for (int j = 0; j < mapXSize; j++) {
-        //                if (karboniteMap[i][j] && visibleRobotMap[i][j]<=0 && (i!=this.me.y&&j!=this.me.x)) {
-        //                    //this.log("i am here x=" + this.me.x + " y=" + this.me.y + "  could mine here x=" + j + " y=" + i);
-        //                    distance = findDistance(me, j, i);
-        //                    if (distance < minDistance) {
-        //                        minDistance = distance;
-        //                        minXCoordinate = j;
-        //                        minYCoordinate = i;
-        //                    }
-        //                }
-        //            }
-        //        }
         return new int[] {minYCoordinate, minXCoordinate};
     }
     
@@ -1318,11 +1305,6 @@ public class MyRobot extends BCAbstractRobot {
         return this.buildUnit(type, spot[1] - this.me.x, spot[0] - this.me.y);
     }
     
-    //should this castle make pilgrims (based on number of nearby deposits)
-    public boolean makeMorePilgrims() {
-        return this.bots.get("pilgrims") < this.closeFuelNum + this.closeKarboNum;
-    }
-    
     //finds the number of close fuel deposits (fuel <= x tiles away from castle)
     public int findCloseFuelDepositNum(int x) {
         int num = 0;
@@ -1338,7 +1320,7 @@ public class MyRobot extends BCAbstractRobot {
     //finds the number of close karbo deposits (karbo <= x tiles away from castle)
     public int findCloseKarboDepositNum(int x) {
         int num = 0;
-        Iterator<int[]> iter = this.fuelLocations.iterator();
+        Iterator<int[]> iter = this.karboLocations.iterator();
         int[] location;
         while (iter.hasNext()) {
             location = iter.next();
