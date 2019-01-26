@@ -1,3 +1,4 @@
+/*
 package bc19;
 
 import java.util.ArrayList;
@@ -135,6 +136,7 @@ public class MyRobot extends BCAbstractRobot {
 		turn++;
 		if (turn == 1)
 		{
+			
 			//gets maps
 			passableMap = getPassableMap();
 			karboniteMap = getKarboniteMap();
@@ -194,13 +196,19 @@ public class MyRobot extends BCAbstractRobot {
             mapYSeventhEighth=mapYLength*7/8;
             regionsOfCastles=new ArrayList<Integer>();
             pointsOfCastles=new ArrayList<Point>();
+            
 		}
 		
 		visibleRobotMap = this.getVisibleRobotMap(); //get visible robots every turn
 		if (me.unit != SPECS.CASTLE) { //dead??
 			this.impendingDoom();
+			
 		}
-		if (me.unit == SPECS.CASTLE) { //castle
+		
+		if (me.unit == SPECS.CASTLE) { 
+			log("castle");
+			
+			//castle
 			if (this.me.castle_talk > 0) { //something died
 				int unit = this.me.castle_talk;
 				this.log("DEATH " + unit);
@@ -257,6 +265,8 @@ public class MyRobot extends BCAbstractRobot {
 					//log("Failed to attack");
 				}
 			}
+			
+			
 			//finding enemy castle stuff
 			 if (turn == 1) {
 	                int summingUpCastles=me.castle_talk+1;
@@ -365,8 +375,11 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				signal(regionCode, 4);
 			}
+			
 		}
-		if (me.unit == SPECS.PILGRIM) { //pilgrim
+		if (me.unit == SPECS.PILGRIM) { 
+			
+			//pilgrim
 			//			log("I am a pilgrim");
 			//			log("My karbonite: "+me.karbonite);
 			//			log("My fuel: "+me.fuel);
@@ -416,10 +429,12 @@ public class MyRobot extends BCAbstractRobot {
 //					Point spot = this.path.poll();
 //					return this.move(spot.getX() - this.me.x, spot.getY() - this.me.y);
 				}
+			
 			}
 //	}
 		if (me.unit == SPECS.CRUSADER) { //crusader
 			//stuff for finding enemy castles
+			
 			if(turn==1) {
                 Robot[] visibleRobots=getVisibleRobots();
                 for(int i=0;i<visibleRobots.length;i++) {
@@ -437,6 +452,7 @@ public class MyRobot extends BCAbstractRobot {
                 }
                 regionsOfCastles=intQuickSort(regionsOfCastles,0,regionsOfCastles.size()-1);
             }
+		
         }
 			//move crusade target every so turns
 			//			this.log(crusaderTarget.x + " " + crusaderTarget.y);
@@ -463,9 +479,14 @@ public class MyRobot extends BCAbstractRobot {
 //						log("Can't find the man");
 //					}
 //				}
+				
 			}
 		
-		if (me.unit==SPECS.PREACHER) { //preacher
+		if (me.unit==SPECS.PREACHER) {
+			
+			
+			//preacher
+		
 //			if (!this.haveCastle) {
 //				this.locateNearbyCastle();
 //			}
@@ -512,8 +533,11 @@ public class MyRobot extends BCAbstractRobot {
 			if (this.onFuel() || this.onKarbo()) {
 				
 			}
+			
 		}
-		if (me.unit == SPECS.PROPHET) { //prophet
+		if (me.unit == SPECS.PROPHET) {
+			
+			//prophet
 			//lead the way for crusaders. probably needs to use signaling near crusaders because vision isn't shared
 			if (this.enemyDestroyed()) {
 				this.toggleReflection();
@@ -530,6 +554,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return null;
+		
 	}
 
 	//Used to log map coordinates
@@ -2239,6 +2264,8 @@ public class MyRobot extends BCAbstractRobot {
 	        }
 	        return null;
 	    }
+	 
+	 
 	 public ArrayList<Integer> intQuickSort(ArrayList<Integer> a, int start, int end) {
 	        if (start<end) { 
 	            // general case 
@@ -2250,6 +2277,7 @@ public class MyRobot extends BCAbstractRobot {
 	        }
 	        return a;
 	    }
+	    
 	    
 	    public int intPartition(ArrayList<Integer> a, int start, int end) {
 	        int pivot;
@@ -2267,10 +2295,469 @@ public class MyRobot extends BCAbstractRobot {
 	        intSwap(a,start,endOfLeft); 
 	        return endOfLeft;
 	    }
+	    
+	    
 	    public void intSwap(ArrayList<Integer> a, int i, int j) {
 	        int tmp = a.get(i);
 	            a.set(i, a.get(j));
 	            a.set(j,tmp);
 
 	    }
+	    
 	}
+*/
+
+/*
+ 
+ /*
+package bc19;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+public class MyRobot extends BCAbstractRobot {
+	public class Point {
+		public int x;
+		public int y;
+
+		public Point() {
+			
+		}
+		
+		public Point(int x, int y) {
+			setPoint(x, y);
+		}
+
+		public void setPoint(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+
+		public int getX() {
+			return this.x;
+		}
+
+		public int getY() {
+			return this.y;
+		}
+		
+		public boolean equals(Point p) {
+			return this.getX()==p.getX() && this.getY()==p.getY();
+		}
+		
+		@Override
+		public String toString() {
+			return "(" + this.getX() + ", " + this.getY() + ")";
+		}
+		
+//		@Override
+//		public boolean equals(Object obj) {
+//			if (obj instanceof Point) {
+//				Point p = (Point)obj;
+//				return this.getX() == p.getX() && this.getY() == p.getY();	
+//			}
+//			return false;
+//		}
+//		
+//		@Override
+//		public int hashCode() {
+//			return this.getX() + this.getY();
+//		}
+	}
+	public int turn;
+	public ArrayList<ArrayList<int[]>> clumpList;
+	//int[] location is done by y then x
+	public final int[] rotationTries = { 0, -1, 1, -2, 2, -3, 3 };
+	public boolean[][] passableMap;
+	public int[][] visibleRobotMap;
+	public boolean[][] karboniteMap;
+	public boolean[][] fuelMap;
+	public int mapYSize, mapXSize; //size of the map, length y and length x
+	public String reflectAxis;
+	public boolean didToggle;
+	public HashSet<Point> karboLocations;
+	public HashSet<Point> fuelLocations;
+	public int karboDepositNum;
+	public int fuelDepositNum;
+	public int closeKarboNum, farKarboNum;
+	public int closeFuelNum, farFuelNum;
+	public final int CLOSE = 5, FAR = 10;
+	public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
+	public Point[] adjacents = new Point[] {new Point(1,0), new Point(1,1), new Point(0,1), new Point(-1,1), new Point(-1,0), new Point(-1,-1), new Point(0,-1), new Point(1,-1)};
+	public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
+	public boolean haveCastle = false;
+	public Point castleLocation = new Point(); //location of castle
+	public Point crusaderTarget = new Point(); //location of crusader target
+	public HashMap<String, Integer> bots = new HashMap<String, Integer>(); //castles know what bots they have created
+	public Queue<Point> path = new LinkedList<Point>();
+	public int numberOfCastles;
+	public ArrayList<Integer> castleRegions;
+	public int myRegion;
+	public int region16;
+    public int region8;
+    public boolean[][] theMap;
+    public int mapXLength;
+    public int mapYLength;
+    public int mapXFirstEighth;
+    public int mapXFirstQuarter;
+    public int mapXThirdEighth;
+    public int mapXSecondQuarter;
+    public int mapXFifthEighth;
+    public int mapXThirdQuarter;
+    public int mapXSeventhEighth;
+    public int mapYFirstEighth;
+    public int mapYFirstQuarter;
+    public int mapYThirdEighth;
+    public int mapYSecondQuarter;
+    public int mapYFifthEighth;
+    public int mapYThirdQuarter;
+    public int mapYSeventhEighth;
+    //Determined by Tommy's method
+    public boolean flippedAcrossX;
+    public ArrayList<Integer> regionsOfCastles; 
+    //public ArrayList<Point> pointsOfCastles;
+    public int signalForEverybody=-1;
+    public int regionCode;
+    public int otherCastleTalk;
+    
+    
+
+	public Action turn() {
+		turn++;
+		if(turn==1) {
+			clumpList=new ArrayList<ArrayList<int[]>>();
+		}
+		log(""+findClump());
+		log("My X location: "+me.x);
+		log("My Y location: "+me.y);
+		visibleRobotMap = this.getVisibleRobotMap(); //get visible robots every turn
+		if (me.unit != SPECS.CASTLE) { //dead??
+			//this.impendingDoom();
+			
+		}
+		if(me.unit == SPECS.CASTLE)
+		{
+			//attacks enemies nearby
+			HashSet<Robot> enemies = findBadGuys(); 
+			Robot closeBadGuy = findPrimaryEnemyDistance(enemies);
+			//log("Castle Health: " + me.health);
+			if(closeBadGuy != null)
+			{
+				//log("found bad guy");
+				//log("bad guy distance: " + closeBadGuy.x + ", " + closeBadGuy.y);
+
+				try {
+					//log("Attacked");
+					return attack(closeBadGuy.x - me.x,closeBadGuy.y - me.y);
+				} catch (Exception e) {
+					//log("Failed to attack");
+				}
+			}
+			
+		/*	
+			//finding enemy castle stuff
+			 if (turn == 1) {
+	                int summingUpCastles=me.castle_talk+1;
+	                castleTalk(summingUpCastles);
+	            }
+	            if(turn==2) {
+	                numberOfCastles=me.castle_talk;
+	                log("number of castles:" + numberOfCastles);
+	            }
+			
+		}
+		
+
+		return null;
+
+	}
+	
+	//Finds all enemy robots in vision range
+		public HashSet<Robot> findBadGuys() {
+			HashSet<Robot> theBadGuys = new HashSet<Robot>();
+			Robot[] visibleBots = getVisibleRobots();
+			for (int i = 0; i < visibleBots.length; i++) {
+				if (me.team != visibleBots[i].team) {
+					theBadGuys.add(visibleBots[i]);
+				}
+			}
+			return theBadGuys;
+		}
+	
+	// Parse through karbonite map and fuel map and put locations in the same
+	// Make ArrayList of locations sorted with everything by distance to the castle
+	
+	//Make ArrayList of clumps (which is an arraylist of arrays) technically
+	
+	//Repeat the following until the HashMap size is 0
+	
+		//Find the closest thing
+	
+		//Put that in clump
+	
+		//Go through ArrayList, and check if it was within 8 r^2 of any previous approved clump
+	
+		//Once done with making a full clump, remove locations from the initial sorted ArrayList
+		public ArrayList<int[]> findClump() {
+			boolean[][] karboniteMap = getKarboniteMap();
+			boolean[][] fuelMap = getFuelMap();
+			ArrayList<int[]> sortedResources = new ArrayList<int[]>();
+
+			// Goes through the map
+			// Checks to make sure I got my y's and x's correct
+			for (int y = 0; y < karboniteMap.length; y++) {
+				for (int x = 0; x < karboniteMap[y].length; x++) {
+					if (karboniteMap[y][x] == true) {
+						int[] location = new int[2];
+						location[0] = y;
+						location[1] = x;
+						sortedResources.add(location);
+					}
+					if (fuelMap[y][x] == true) {
+						int[] location = new int[2];
+						location[0] = y;
+						location[1] = x;
+						sortedResources.add(location);
+					}
+				}
+			}
+			quickSort(sortedResources,0,sortedResources.size());//causing prop 1 of undef error
+			// At this point, sortedResources has all of the fuel and karbonite locations
+			// from the map
+			return sortedResources;
+		}
+
+		public void quickSort(ArrayList<int[]> resources, int start, int end) {
+			if (start < end) { // general case
+				int pivot = partition(resources, start, end);
+				// sort left sublist
+				quickSort(resources, start, pivot - 1);
+				// sort the right sublist
+				quickSort(resources, pivot + 1, end);
+			}
+		}
+
+		public int partition(ArrayList<int[]> resources, int start, int end) {
+			int[] pivot;
+			int endOfLeft;
+			int midIndex = (start + end) / 2;
+			swap(resources, start, midIndex);
+			pivot = resources.get(start);
+			endOfLeft = start;
+			for (int i = start + 1; i <= end; i++) {
+				if (findDistance(resources.get(i)) < findDistance(pivot)) {
+					endOfLeft = endOfLeft + 1;
+					swap(resources, endOfLeft, i);
+				}
+			}
+			swap(resources, start, endOfLeft);
+			return endOfLeft;
+		}
+
+		public static void swap(ArrayList<int[]> resources, int i, int j) {
+			int[] tmp = resources.get(i);
+			resources.set(i, resources.get(j));
+			resources.set(j, tmp);
+		}
+		
+		public double findDistance(int[] location) {
+			int xDistance = location[1] - me.x;
+			int yDistance = location[0] - me.y;
+			return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+		
+		//Finds closest enemy robot
+		public Robot findPrimaryEnemyDistance(HashSet<Robot> potentialEnemies) {
+			double distance = Double.MAX_VALUE;
+			Robot closeBot = null;
+			Iterator<Robot> badGuyIter = potentialEnemies.iterator();
+			while(badGuyIter.hasNext()) {
+				Robot aBadGuy = badGuyIter.next();
+				double badGuyDistance = findDistance(me, aBadGuy);
+				//			log("Distance: "+badGuyDistance);
+				if(badGuyDistance < distance) {
+					//				log("Found closer robot");
+					distance = badGuyDistance;
+					//				log("New closest distance: "+distance);
+					closeBot = aBadGuy;
+				}
+
+			}
+			//		if(closeBot==null) {
+			//			log("Still null boo");
+			//		} else {
+			//			log("You the man");
+			//		}
+			return closeBot;
+		}
+		
+		// Finds distance squared between two robots
+		public double findDistance(Robot me, Robot opponent) {
+			int xDistance = opponent.x - me.x;
+			int yDistance = opponent.y - me.y;
+			return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+		}
+		
+		
+		
+	}
+	
+	*/
+package bc19;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+
+public class MyRobot extends BCAbstractRobot {
+	public int turn;
+	public ArrayList<ArrayList<int[]>> clumpList;
+	// int[] location is done by y then x
+
+	public Action turn() {
+		turn++;
+		if (turn == 1) {
+			clumpList = new ArrayList<ArrayList<int[]>>();
+		}
+		log("My X location: " + me.x);
+		log("My Y location: " + me.y);
+		ArrayList<int[]> sortedResources = findSortedResources();
+		log("Sorted Resources: " + sortedResources);
+		displayAllClumps(findAllClumps(sortedResources));
+		return null;
+
+	}
+
+	// Parse through karbonite map and fuel map and put locations in the same
+	// Make ArrayList of locations sorted with everything by distance to the castle
+
+	// Make ArrayList of clumps (which is an arraylist of arrays) technically
+
+	// Repeat the following until the HashMap size is 0
+
+	// Find the closest thing
+
+	// Put that in clump
+
+	// Go through ArrayList, and check if it was within 8 r^2 of any previous
+	// approved clump
+
+	// Once done with making a full clump, remove locations from the initial sorted
+	// ArrayList
+	public void displayAllClumps(ArrayList<HashSet<int[]>> allClumps) {
+		for(int i=0;i<allClumps.size();i++) {
+			log("Clump "+i+": "+allClumps.get(i));
+		}
+	}
+	
+	public ArrayList<HashSet<int[]>> findAllClumps(ArrayList<int[]> sortedResources) {
+		ArrayList<HashSet<int[]>> everyClump=new ArrayList<HashSet<int[]>>();
+		while(sortedResources.size()>0) {
+			everyClump.add(findClump(sortedResources));
+			int lastIndex=everyClump.size()-1;
+			Iterator<int[]> clumpRemovalFromArrayListIterator=everyClump.get(lastIndex).iterator();
+			while(clumpRemovalFromArrayListIterator.hasNext()) {
+				sortedResources.remove(clumpRemovalFromArrayListIterator.next());
+			}
+		}
+		return everyClump;
+	}
+	
+	
+	public HashSet<int[]> findClump(ArrayList<int[]> sortedResources) {
+		HashSet<int[]> clump = new HashSet<int[]>();
+		clump.add(sortedResources.get(0));
+		for (int i = 1; i < sortedResources.size(); i++) {
+			Iterator<int[]> clumpIterator=clump.iterator();
+			while(clumpIterator.hasNext()) {
+				int[] aClumpLocation=clumpIterator.next();
+				if(findDistance(sortedResources.get(i),aClumpLocation)<=9) {
+					clump.add(sortedResources.get(i));
+				}
+			}
+		}
+		return clump;
+	}
+
+	public ArrayList<int[]> findSortedResources() {
+		boolean[][] karboniteMap = getKarboniteMap();
+		boolean[][] fuelMap = getFuelMap();
+		ArrayList<int[]> sortedResources = new ArrayList<int[]>();
+
+		// Goes through the map
+		// Checks to make sure I got my y's and x's correct
+		for (int y = 0; y < karboniteMap.length; y++) {
+			for (int x = 0; x < karboniteMap[y].length; x++) {
+				if (karboniteMap[y][x] == true) {
+					int[] location = new int[2];
+					location[0] = y;
+					location[1] = x;
+					sortedResources.add(location);
+				}
+				if (fuelMap[y][x] == true) {
+					int[] location = new int[2];
+					location[0] = y;
+					location[1] = x;
+					sortedResources.add(location);
+				}
+			}
+		}
+		quickSort(sortedResources, 0, sortedResources.size() - 1);
+		// At this point, sortedResources has all of the fuel and karbonite locations
+		// from the map
+		return sortedResources;
+	}
+
+	public void quickSort(ArrayList<int[]> resources, int start, int end) {
+		if (start < end) { // general case
+			int pivot = partition(resources, start, end);
+			// sort left sublist
+			quickSort(resources, start, pivot - 1);
+			// sort the right sublist
+			quickSort(resources, pivot + 1, end);
+		}
+	}
+
+	public int partition(ArrayList<int[]> resources, int start, int end) {
+		int[] pivot;
+		int endOfLeft;
+		int midIndex = (start + end) / 2;
+		swap(resources, start, midIndex);
+		pivot = resources.get(start);
+		endOfLeft = start;
+		for (int i = start + 1; i <= end; i++) {
+			log("Resources get i: " + resources.get(i));
+			log("Pivot: " + pivot);
+			if (findDistance(resources.get(i)) < findDistance(pivot)) {
+				endOfLeft = endOfLeft + 1;
+				swap(resources, endOfLeft, i);
+			}
+		}
+		swap(resources, start, endOfLeft);
+		return endOfLeft;
+	}
+
+	public static void swap(ArrayList<int[]> resources, int i, int j) {
+		int[] tmp = resources.get(i);
+		resources.set(i, resources.get(j));
+		resources.set(j, tmp);
+	}
+
+	public double findDistance(int[] location) {
+		int xDistance = location[1] - me.x;
+		int yDistance = location[0] - me.y;
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+	
+	public double findDistance(int[] location1,int[] location2) {
+		int xDistance = location2[1] - location1[1];
+		int yDistance = location2[0] - location1[0];
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+}
