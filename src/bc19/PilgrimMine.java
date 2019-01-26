@@ -25,8 +25,12 @@ public class MyRobot extends BCAbstractRobot {
 			try {
 				return mine();
 			} catch (Exception e) {
-				
 				log("Can't mine");
+				try {
+					return give(me.x-castleLocation[1],me.y-castleLocation[0],me.karbonite,me.fuel);
+				} catch (Exception f) {
+					log("Didn't give");
+				}
 			}
 			log("Castle Location: "+castleLocation);
 		}
