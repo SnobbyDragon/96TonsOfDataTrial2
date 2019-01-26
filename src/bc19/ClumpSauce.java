@@ -11,6 +11,7 @@ public class MyRobot extends BCAbstractRobot {
 		if(turn==1) {
 			clumpList=new ArrayList<ArrayList<int[]>>();
 		}
+		log(""+findClump());
 		turn++;
 
 		return null;
@@ -31,7 +32,7 @@ public class MyRobot extends BCAbstractRobot {
 		//Go through ArrayList, and check if it was within 8 r^2 of any previous approved clump
 	
 		//Once done with making a full clump, remove locations from the initial sorted ArrayList
-	public void findClump() {
+	public ArrayList<int[]> findClump() {
 		boolean[][] karboniteMap=getKarboniteMap();
 		boolean[][] fuelMap=getFuelMap();
 		ArrayList<int[]> sortedResources=new ArrayList<int[]>();
@@ -55,6 +56,6 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		//At this point, sortedResources has all of the fuel and karbonite locations from the map
-		
+		return sortedResources;
 	}
 }
