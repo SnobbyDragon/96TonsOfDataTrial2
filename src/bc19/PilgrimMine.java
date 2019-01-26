@@ -7,26 +7,44 @@ import java.util.Iterator;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
-
+	public int[] castleLocation;
 	public Action turn() {
 		turn++;
+		if(turn==1) {
+			castleLocation=new int[2];
+		}
 		if(me.unit==SPECS.CASTLE) {
 			if(turn==1) {
 				return buildUnit(SPECS.PILGRIM,1,0);
 			}
 		}
 		if(me.unit==SPECS.PILGRIM) {
+			if(turn==1) {
+				castleLocation=findMyCastle();
+			}
 			try {
 				return mine();
 			} catch (Exception e) {
+				
 				log("Can't mine");
 			}
+			log("Castle Location: "+castleLocation);
 		}
 		log("Made the null");
 		return null;
-
 	}
-
+	
+	public int[] findMyCastle() {
+		int[] castleLocation=new int[2];
+		Robot[] visibleRobots=getVisibleRobots();
+		for(int i=0;i<visibleRobots.length;i++) {
+			if(visibleRobots[i].unit==SPECS.CASTLE) {
+				castleLocation[0]=visibleRobots[i].y;
+				castleLocation[1]=visibleRobots[i].x;
+			}
+		}
+		return castleLocation;
+	}
 	public double findDistance(int[] location) {
 		int xDistance = location[1] - me.x;
 		int yDistance = location[0] - me.y;
