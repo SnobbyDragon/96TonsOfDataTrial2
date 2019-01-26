@@ -18,8 +18,7 @@ public class MyRobot extends BCAbstractRobot {
 		log("My Y location: " + me.y);
 		ArrayList<int[]> sortedResources = findSortedResources();
 		log("Sorted Resources: " + sortedResources);
-		log("Closest Clump: " + findClump(sortedResources));
-
+		displayAllClumps(findAllClumps(sortedResources));
 		return null;
 
 	}
@@ -40,6 +39,26 @@ public class MyRobot extends BCAbstractRobot {
 
 	// Once done with making a full clump, remove locations from the initial sorted
 	// ArrayList
+	public void displayAllClumps(ArrayList<HashSet<int[]>> allClumps) {
+		for(int i=0;i<allClumps.size();i++) {
+			log("Clump "+i+": "+allClumps.get(i));
+		}
+	}
+	
+	public ArrayList<HashSet<int[]>> findAllClumps(ArrayList<int[]> sortedResources) {
+		ArrayList<HashSet<int[]>> everyClump=new ArrayList<HashSet<int[]>>();
+		while(sortedResources.size()>0) {
+			everyClump.add(findClump(sortedResources));
+			int lastIndex=everyClump.size()-1;
+			Iterator<int[]> clumpRemovalFromArrayListIterator=everyClump.get(lastIndex).iterator();
+			while(clumpRemovalFromArrayListIterator.hasNext()) {
+				sortedResources.remove(clumpRemovalFromArrayListIterator.next());
+			}
+		}
+		return everyClump;
+	}
+	
+	
 	public HashSet<int[]> findClump(ArrayList<int[]> sortedResources) {
 		HashSet<int[]> clump = new HashSet<int[]>();
 		clump.add(sortedResources.get(0));
