@@ -47,7 +47,7 @@ public class MyRobot extends BCAbstractRobot {
 			Iterator<int[]> clumpIterator=clump.iterator();
 			while(clumpIterator.hasNext()) {
 				int[] aClumpLocation=clumpIterator.next();
-				if(findDistance(sortedResources.get(i),aClumpLocation)<=8) {
+				if(findDistance(sortedResources.get(i),aClumpLocation)<=9) {
 					clump.add(sortedResources.get(i));
 				}
 			}
