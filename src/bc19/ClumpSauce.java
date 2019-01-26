@@ -83,6 +83,8 @@ public class MyRobot extends BCAbstractRobot {
 		pivot = resources.get(start);
 		endOfLeft = start;
 		for (int i = start + 1; i <= end; i++) {
+			log("Resources get i: "+resources.get(i));
+			log("Pivot: "+pivot);
 			if (findDistance(resources.get(i)) < findDistance(pivot)) {
 				endOfLeft = endOfLeft + 1;
 				swap(resources, endOfLeft, i);
