@@ -1,3 +1,4 @@
+
 package bc19;
 
 import bc19.*;
@@ -258,7 +259,9 @@ public class MyRobot extends BCAbstractRobot {
                 	if(build != null)
                 	{
                 		castleTalk(4);
-                		return buildUnit(4, build[0], build[1]);
+                		if(karbonite*10>fuel) {
+                			return buildUnit(4, build[0], build[1]);
+                		}
                 	}
                 }
             }
@@ -331,7 +334,9 @@ public class MyRobot extends BCAbstractRobot {
                     if(build != null)
                     {
                         castleTalk(4);
-                        return buildUnit(4, build[0], build[1]);
+                        if(karbonite*10>fuel) {
+                			return buildUnit(4, build[0], build[1]);
+                		}
                     }
                 }
             }
@@ -405,12 +410,7 @@ public class MyRobot extends BCAbstractRobot {
         }
         int[] point;
         if (this.visibleRobotMap[home[1]][home[0]] > 0) { //home in sight, go to deposits to mine
-            if(karbonite*7<fuel) {
-	    	log("Karbo crisis");
-              point= searchForKarboniteLocation();
-            } else {
-            point = findClosestDeposit();
-            }
+          point=findClosestDeposit();
             if (!tilesInRange(point, home, clumpRadius2)) {
                 //robot going to another clump
             }
@@ -1577,3 +1577,158 @@ public class MyRobot extends BCAbstractRobot {
 		return endPoint;
 	}
 }
+
+/*
+package bc19;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+
+public class MyRobot extends BCAbstractRobot {
+	public int turn;
+	public int[] castleLocation;
+	public int[][] karboSpots;
+	public int numKarbos = 0;
+	public int mapYSize, mapXSize;
+	public boolean[][] passableMap;
+	public boolean[][] karboniteMap;
+	public boolean[][] fuelMap;
+
+	public Action turn() {
+		turn++;
+
+		if (turn == 1) {
+			this.passableMap = this.getPassableMap();
+			this.mapYSize = this.passableMap.length;
+			this.mapXSize = this.passableMap[0].length;
+			castleLocation = new int[2];
+			this.karboniteMap = this.getKarboniteMap();
+			this.fuelMap = this.getFuelMap();
+			this.getNumKarbos();
+			karboSpots = new int[numKarbos][2];
+			karboSpotCool();
+		}
+		if (me.unit == SPECS.CASTLE) {
+			if (turn == 1) {
+				return buildUnit(SPECS.PILGRIM, 1, 0);
+			}
+		}
+		if (me.unit == SPECS.PILGRIM) {
+			if (turn == 1) {
+				castleLocation = findMyCastle();
+			}
+			searchForKarboniteLocation();
+			try {
+				return mine();
+			} catch (Exception e) {
+				log("Can't mine");
+				try {
+					return give(me.x - castleLocation[1], me.y - castleLocation[0], me.karbonite, me.fuel);
+				} catch (Exception f) {
+					log("Didn't give");
+				}
+			}
+			log("Castle Location: " + castleLocation);
+		}
+		log("Made the null");
+		return null;
+	}
+
+	public int[] findMyCastle() {
+		int[] castleLocation = new int[2];
+		Robot[] visibleRobots = getVisibleRobots();
+		for (int i = 0; i < visibleRobots.length; i++) {
+			if (visibleRobots[i].unit == SPECS.CASTLE) {
+				castleLocation[0] = visibleRobots[i].y;
+				castleLocation[1] = visibleRobots[i].x;
+			}
+		}
+		return castleLocation;
+	}
+
+	public int[] searchForKarboniteLocation() {
+		double minDistance = Double.MAX_VALUE;
+		int minXCoordinate = -1;
+		int minYCoordinate = -1;
+		double distance;
+		log("My X: " + me.x);
+		log("My Y; " + me.y);
+		for (int i = 0; i < karboSpots.length; i++) {
+			log("Potential Karbo X: " + karboSpots[i][0]);
+			log("Potential Karbo Y: " + karboSpots[i][1]);
+			distance = findDistance(me, karboSpots[i][0], karboSpots[i][1]);
+			if (distance < minDistance) {
+				minDistance = distance;
+				minXCoordinate = karboSpots[i][0];
+				minYCoordinate = karboSpots[i][1];
+			}
+		}
+		int[] endPoint = { minXCoordinate, minYCoordinate };
+		log("Actual Karbo X: " + endPoint[0]);
+		log("Actual Karbo Y: " + endPoint[1]);
+		return endPoint;
+	}
+
+	public double findDistance(int[] location) {
+		int xDistance = location[1] - me.x;
+		int yDistance = location[0] - me.y;
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+
+	// Finds distance squared between a robot and a pair of coordinates
+	public double findDistance(Robot me, int x, int y) {
+		int xDistance = x - me.x;
+		int yDistance = y - me.y;
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+
+	public double findDistance(int[] location1, int[] location2) {
+		int xDistance = location2[1] - location1[1];
+		int yDistance = location2[0] - location1[0];
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+
+	public void getDepositSpots() {
+		karboSpots = new int[numKarbos][2];
+		// fuelSpots = new int[numFuels][2];
+		int karboIndex = 0;
+		int fuelIndex = 0;
+		for (int x = 0; x < this.mapXSize; x++) {
+			for (int y = 0; y < this.mapYSize; y++) {
+				if (this.karboniteMap[y][x]) {
+					karboSpots[karboIndex][0] = x;
+					karboSpots[karboIndex][1] = y;
+					karboIndex++;
+				} else if (this.fuelMap[y][x]) {
+					// fuelSpots[fuelIndex][0] = x;
+					// fuelSpots[fuelIndex][1] = y;
+					fuelIndex++;
+				}
+			}
+		}
+	}
+
+	public void getNumKarbos() {
+		for (boolean[] row : this.karboniteMap) {
+			for (boolean b : row) {
+				this.numKarbos += b ? 1 : 0;
+			}
+		}
+	}
+	
+	public void karboSpotCool() {
+		int karboIndex=0;
+		for(int x=0;x<this.mapXSize;x++) {
+			for(int y=0;y<this.mapYSize;y++) {
+				if(this.karboniteMap[y][x]) {
+					karboSpots[karboIndex][0]=x;
+					karboSpots[karboIndex][1]=y;
+					karboIndex++;
+				}
+			}
+		}
+	}
+}
+*/
