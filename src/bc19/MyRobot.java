@@ -374,8 +374,6 @@ public class MyRobot extends BCAbstractRobot {
             }
         }
         
-        getCastleLocs(); // MAKE THIS WORK LIASFUGHASRGUIHARGLASIGHASGHALSUHGUASH GASDUGH ASDLHGKHAJKSDHGJKAHSDLUGHASDJGNSAD.NGAKJSG
-        
             if(fuel >= pilgrimLim * 2)
             {
                 if(moveAway())
@@ -399,8 +397,6 @@ public class MyRobot extends BCAbstractRobot {
             getHomeCastle();
             arrived = false;
         }
-        
-        getCastleLocs(); // Only does anything on turns 849-850
         
         int[] atk = autoAttack();
         if(atk != null)
@@ -460,8 +456,6 @@ public class MyRobot extends BCAbstractRobot {
         {
             return atk;
         }
-        
-        getCastleLocs();
         
         return null;
     }
@@ -577,13 +571,14 @@ public class MyRobot extends BCAbstractRobot {
     
     public void setXorKey()
     {
-        int[] parts = new int[4];
-        parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
-        parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
-        parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
-        parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
+//        int[] parts = new int[4];
+//        parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
+//        parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
+//        parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
+//        parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
         
-        xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
+//        xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
+    	xorKey = 34567843;
     }
     
     public void getEnemyCastleLocs()
@@ -1679,52 +1674,5 @@ public class MyRobot extends BCAbstractRobot {
                 }
             }
         }
-    }
-    
-    public void getCastleLocs()
-    {
-        if(globalTurn == 849)
-        {
-            int talk = getCastObj(0).signal ^ xorKey;
-            
-            if(talk >= 4096)
-            {
-                numCastles = 1;
-                getEnemyCastleLocs();
-                getTargetCastle();
-            }
-            else
-            {
-                numCastles = 2;
-                castleLocs[1][0] = talk % 64;
-                castleLocs[1][1] = (int) Math.floor(talk / 64);
-            }
-        }
-        else if(globalTurn == 850 && numCastles == 2)
-        {
-            int talk = getCastObj(0).signal ^ xorKey;
-            if(talk < 4096)
-            {
-                numCastles = 3;
-                castleLocs[2][0] = talk % 64;
-                castleLocs[2][1] = (int) Math.floor(talk / 64);
-            }
-            getEnemyCastleLocs();
-            getTargetCastle();
-        }
-    }
-    
-    public Robot getCastObj(int num)
-    {
-        Robot[] visb = getVisibleRobots();
-        
-        for(Robot cast : visb)
-        {
-            if(cast.id == robots[0].get(num))
-            {
-                return cast;
-            }
-        }
-        return null;
     }
 }
