@@ -20,22 +20,20 @@ public class MyRobot extends BCAbstractRobot {
     
     public final int[][] adjacents = new int[][] {new int[] {0,1}, new int[] {-1,1}, new int[] {-1,0}, new int[] {-1,-1}, new int[] {0,-1}, new int[] {1,-1}, new int[] {1,0}, new int[] {1,1}};
     public int numCastles;
+    public int[] castleIDs = new int[3];
     public int[][] castleLocations = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
-    public int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+    public int[][] evilCastleLocations = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
     public ArrayList<Integer>[] robots = new ArrayList[6];
     public int numFuelMines = 0;
     public int numKarbMines = 0;
     public int maxPilgrims;
-    
     //pathing
     public ArrayList<int[]> path = null;
     public int pathIndex;
-    
     //PROPHET LATTICE OP
     public int castleDirection;
     public int sideDirection;
     public boolean inPosition;
-    
     public int castleIndex;
     public int top;
     public int left;
@@ -51,8 +49,6 @@ public class MyRobot extends BCAbstractRobot {
     public ArrayList<int[]> karbosInUse = new ArrayList<int[]>();
     public ArrayList<int[]> fuelsInUse = new ArrayList<int[]>();
     public int[] home;
-    public int[] castleIDs = new int[3];
-    
     public final int clumpRadius2 = 25;
     public ArrayList<int[]> clumpCenters;
     public ArrayList<ArrayList<int[]>> clumps;
@@ -610,13 +606,13 @@ public class MyRobot extends BCAbstractRobot {
         {
             if(horizontalReflection)
             {
-                enemyCastleLocs[i][0] = this.mapYSize - 1 - castleLocations[i][0];
-                enemyCastleLocs[i][1] = castleLocations[i][1];
+                evilCastleLocations[i][0] = this.mapYSize - 1 - castleLocations[i][0];
+                evilCastleLocations[i][1] = castleLocations[i][1];
             }
             else
             {
-                enemyCastleLocs[i][0] = castleLocations[i][0];
-                enemyCastleLocs[i][1] = this.mapYSize - 1 - castleLocations[i][1];
+                evilCastleLocations[i][0] = castleLocations[i][0];
+                evilCastleLocations[i][1] = this.mapYSize - 1 - castleLocations[i][1];
             }
         }
     }
