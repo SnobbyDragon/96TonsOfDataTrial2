@@ -7,17 +7,15 @@ import java.util.Arrays;
 import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
-    // important
+	
     public int mapYSize, mapXSize; //size of the map, length y and length x
     public boolean horizontalReflection;
     public int[][] visibleRobotMap;
     public boolean[][] passableMap;
     public boolean[][] karboniteMap;
     public boolean[][] fuelMap;
-    public int xorKey; // XOR any signal by this, and any castletalk by this % 256
-    // Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
-    // separately; don't worry 'bout it.
-    public final int[][] adjacentSpaces = new int[][] { // Matrix of adjacent spaces, relative to the Robot
+    
+    public final int[][] adjacentSpaces = new int[][] {
     new int[] {0,1},
     new int[] {-1,1},
     new int[] {-1,0},
@@ -27,7 +25,7 @@ public class MyRobot extends BCAbstractRobot {
     new int[] {1,0},
     new int[] {1,1}
     };
-    public int numCastles; // DO NOT USE for castles. Use numCastles instead.
+    public int numCastles;
     public int ourDeadCastles = 0;
     public int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
     public int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
@@ -52,7 +50,6 @@ public class MyRobot extends BCAbstractRobot {
     public int top;
     public int left;
     public int numUnits = 0;
-    public int numMines = 0;
     public int numKarbos = 0;
     public int numFuels = 0;
     public int myMineScore;
@@ -66,26 +63,27 @@ public class MyRobot extends BCAbstractRobot {
     public int[] HOME;
     public int[] castleIDs = new int[3];
     
-    public final int mineClusterRadiusSqrd = 25;
-    public ArrayList<int[]> mineClusterCenters;
-    public ArrayList<ArrayList<int[]>> mineClusters;
+    public final int clumpRadius2 = 25;
+    public ArrayList<int[]> clumpCenters;
+    public ArrayList<ArrayList<int[]>> clumps;
     public int[][] allMines;
     
     
     public Action turn() {
         if (me.turn == 1) {
-            this.mapYSize = this.map.length;
-            this.mapXSize = this.map[0].length;
             this.passableMap = this.getPassableMap();
+            this.mapYSize = this.passableMap.length;
+            this.mapXSize = this.passableMap[0].length;
             this.karboniteMap = this.getKarboniteMap();
             this.fuelMap = this.getFuelMap();
+            this.getNumKarbos();
+            this.getNumFuels();
             for(int i = 0; i < 6; i++)
             {
                 robots[i] = new ArrayList<Integer>();
             }
             
             horizontalReflection = getReflDir();
-            setXorKey();
         }
         else
         {
@@ -113,9 +111,8 @@ public class MyRobot extends BCAbstractRobot {
         if (me.turn == 1)
         {
         	fillAllMines();
-            getMineScores();
-            identifyClusters();
-            findClusterCenters();
+            findClumps();
+            findClumpCenters();
             
             numCastles = 1;
             castleIDs[0] = me.id;
@@ -124,16 +121,15 @@ public class MyRobot extends BCAbstractRobot {
             for (Robot r : getVisibleRobots()) {
                 if (r.team == me.team && r.id != me.id) {
                     castleIDs[numCastles] = r.id;
-                    numCastles += 1;
+                    numCastles ++;
                     robots[0].add(r.id);
                 }
             }
             
-            int[] myMine = findClosestMine();
-            for (int i = 0; i < mineClusters.size(); i++) {
-                if (mineClusters.get(i).contains(myMine)) {
-                    log("found my mine");
-                    myMineScore = mineClusters.get(i).size();
+            int[] myMine = findClosestDeposit();
+            for (int i = 0; i < clumps.size(); i++) {
+                if (clumps.get(i).contains(myMine)) {
+                    myMineScore = clumps.get(i).size();
                     currentColonization = i;
                     isMineColonized[i] = true;
                 }
@@ -143,14 +139,14 @@ public class MyRobot extends BCAbstractRobot {
             
             if (numCastles > 1)
             {
-                castleTalk(me.x ^ (xorKey % 256));
+                castleTalk(me.x);
                 
                 for(int i = 1; i < numCastles; i++)
                 {
                     Robot castle = getRobot(robots[0].get(i));
                     if(castle.turn == 1)
                     {
-                        castleLocs[i][0] = castle.castle_talk ^ (xorKey % 256);
+                        castleLocs[i][0] = castle.castle_talk;
                     }
                 }
             }
@@ -163,18 +159,18 @@ public class MyRobot extends BCAbstractRobot {
         {
             if (numCastles > 1)
             {
-                castleTalk(me.y ^ (xorKey % 256));
+                castleTalk(me.y);
                 
                 for(int i = 1; i < numCastles; i++)
                 {
-                    Robot cast = getRobot(robots[0].get(i));
-                    if(cast.turn == 2)
+                    Robot castle = getRobot(robots[0].get(i));
+                    if(castle.turn == 2)
                     {
-                        castleLocs[i][1] = cast.castle_talk ^ (xorKey % 256);
+                        castleLocs[i][1] = castle.castle_talk;
                     }
                     else
                     {
-                        castleLocs[i][0] = cast.castle_talk ^ (xorKey % 256);
+                        castleLocs[i][0] = castle.castle_talk;
                     }
                 }
             }
@@ -186,14 +182,13 @@ public class MyRobot extends BCAbstractRobot {
             {
                 for(int i = 1; i < numCastles; i++)
                 {
-                    Robot cast = getRobot(robots[0].get(i));
-                    if(cast.turn == 2)
+                    Robot castle = getRobot(robots[0].get(i));
+                    if(castle.turn == 2)
                     {
-                        castleLocs[i][1] = cast.castle_talk ^ (xorKey % 256);
+                        castleLocs[i][1] = castle.castle_talk;
                     }
                 }
             }
-            getEnemyCastleLocs();
             log("castles = " + numCastles);
         }
         
@@ -211,8 +206,6 @@ public class MyRobot extends BCAbstractRobot {
                 isMineColonized[castle.castle_talk - 1] = true;
             }
         }
-        
-        log("castles = " + numCastles);
         /*
          * log("global population: " + numUnits); boolean haveNeighbors = false; for
          * (int[] move : adjacentSpaces) { int tryX = me.x + move[0]; int tryY = me.y +
@@ -245,11 +238,11 @@ public class MyRobot extends BCAbstractRobot {
             return null;
         }
         
-        for (int i = 0; i < mineClusterCenters.size(); i++) {
+        for (int i = 0; i < clumpCenters.size(); i++) {
             if (isMineColonized[i]) {
                 continue;
             }
-            int[] center = mineClusterCenters.get(i);
+            int[] center = clumpCenters.get(i);
             currentColonization = i;
             isMineColonized[i] = true;
             for (int[] move : adjacentSpaces) {
@@ -272,12 +265,11 @@ public class MyRobot extends BCAbstractRobot {
     public Action church() {
         if (me.turn == 1) {
             fillAllMines();
-            getMineScores();
-            identifyClusters();
+            findClumps();
             numUnits = 1;
             HOME = new int[] {me.x, me.y};
-            int[] myMine = findClosestMine();
-            for (ArrayList<int[]> cluster : mineClusters) {
+            int[] myMine = findClosestDeposit();
+            for (ArrayList<int[]> cluster : clumps) {
                 if (cluster.contains(myMine)) {
                     myMineScore = cluster.size();
                 }
@@ -373,8 +365,8 @@ public class MyRobot extends BCAbstractRobot {
              * if (20 * numUnits > fuel) { location = findClosestFuel(); } else { location =
              * findClosestKarbo(); }
              */
-            location = findClosestMine();
-            if (!tilesInRange(location, HOME, mineClusterRadiusSqrd)) {
+            location = findClosestDeposit();
+            if (!tilesInRange(location, HOME, clumpRadius2)) {
                 log("robot is straying away from base");
             }
         }
@@ -633,18 +625,6 @@ public class MyRobot extends BCAbstractRobot {
         return ans;
     }
     
-    public void setXorKey()
-    {
-        //        int[] parts = new int[4];
-        //        parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
-        //        parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
-        //        parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
-        //        parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
-        
-        //        xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
-        xorKey = 34567843;
-    }
-    
     public void getEnemyCastleLocs()
     {
         for(int i = 0; i < 3; i++)
@@ -722,79 +702,23 @@ public class MyRobot extends BCAbstractRobot {
         return new int[] {getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y};
     }
     
-    // For preacherAttack()
-    public Robot[] getPreacherKillableRobots() // Now returns only units with max health <= 20 in visibility range, but
-    // can be edited
-    { // to also return damaged units or units 1 space outside visibility range
-        Robot[] robots = getVisibleRobots();
-        ArrayList<Robot> killable = new ArrayList<Robot>();
-        
-        for (Robot r : robots) {
-            if (r.team != me.team && (r.unit == SPECS.PILGRIM || r.unit == SPECS.PROPHET)) {
-                killable.add(r);
-            }
-        }
-        
-        return killable.toArray(new Robot[killable.size()]);
+    public void getNumKarbos() {
+    	for (boolean[] row : this.karboniteMap) {
+    		for (boolean b : row) {
+    			this.numKarbos += b ? 1 : 0;
+    		}
+    	}
     }
     
-    // For preacherAttack()
-    public Robot[] getAllies() // Now returns only visible allies, but preachers can damage non-visible allies
-    // :( plis update
-    {
-        Robot[] robots = getVisibleRobots();
-        ArrayList<Robot> allies = new ArrayList<Robot>();
-        
-        for (Robot r : robots) {
-            if (r.team == me.team) {
-                allies.add(r);
-            }
-        }
-        
-        return allies.toArray(new Robot[allies.size()]);
+    public void getNumFuels() {
+    	for (boolean[] row : this.fuelMap) {
+    		for (boolean b : row) {
+    			this.numFuels += b ? 1 : 0;
+    		}
+    	}
     }
     
-    // For preacherAttack()
-    public Robot[] getEnemyRobots() // Does not return from outside of visibility range :(
-    {
-        Robot[] robots = getVisibleRobots();
-        ArrayList<Robot> enemies = new ArrayList<Robot>();
-        
-        for (Robot r : robots) {
-            if (r.team != me.team && (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER || r.unit == SPECS.CASTLE)) {
-                enemies.add(r);
-            }
-        }
-        
-        return enemies.toArray(new Robot[enemies.size()]);
-    }
-    
-    // For preacherAttack()
-    public Robot[] getEnemyChurches() // Does not return from outside of visibility range :(
-    { // Do not combine with other preacherAttack() helper methods. Ask Zain for elaboration if wanted.
-        Robot[] robots = getVisibleRobots();
-        ArrayList<Robot> buildings = new ArrayList<Robot>();
-        
-        for (Robot r : robots) {
-            if (r.team != me.team && r.unit == SPECS.CHURCH)
-            {
-                buildings.add(r);
-            }
-        }
-        
-        return buildings.toArray(new Robot[buildings.size()]);
-    }
-    
-    // For preacherAttack()
-    public boolean squareContainsRobot(Robot r, int centerX, int centerY) // 3x3 square
-    {
-        if (r.x + 1 >= centerX && r.x - 1 <= centerX && r.y + 1 >= centerY && r.y - 1 <= centerY) {
-            return true;
-        }
-        return false;
-    }
-    
-    public void getMineSpots() {
+    public void getDepositSpots() {
         allKarbos = new int[numKarbos][2];
         allFuels = new int[numFuels][2];
         int karboIndex = 0;
@@ -813,6 +737,7 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     public void fillAllMines() {
+    	this.getDepositSpots();
         allMines = new int[numKarbos + numFuels][];
         int i = 0;
         for (int[] mine : allKarbos) {
@@ -825,24 +750,9 @@ public class MyRobot extends BCAbstractRobot {
         }
     }
     
-    // call this on turn 1 after fillAllMines
-    public void getMineScores() {
-        allMineScores = new int[allMines.length];
-        int index = 0;
-        for (int[] check : allMines) {
-            int count = 0;
-            for (int[] mine : allMines) {
-                if (tilesInRange(check, mine, mineClusterRadiusSqrd)) {
-                    count++;
-                }
-            }
-            allMineScores[index++] = count;
-        }
-    }
-    
-    public void identifyClusters() {
+    public void findClumps() {
         ArrayList<int[]> scannedMines = new ArrayList<>();
-        mineClusters = new ArrayList<>();
+        clumps = new ArrayList<>();
         while (scannedMines.size() != allMines.length) {
             int bestIndex = -1;
             for (int i = 0; i < allMineScores.length; i++) {
@@ -861,18 +771,18 @@ public class MyRobot extends BCAbstractRobot {
                 if (scannedMines.contains(mine)) {
                     continue;
                 }
-                if (tilesInRange(head, mine, mineClusterRadiusSqrd)) {
+                if (tilesInRange(head, mine, clumpRadius2)) {
                     currentCluster.add(mine);
                     scannedMines.add(mine);
                 }
             }
-            mineClusters.add(currentCluster);
+            clumps.add(currentCluster);
         }
     }
     
-    public void findClusterCenters() {
-        mineClusterCenters = new ArrayList<>();
-        for (ArrayList<int[]> cluster : mineClusters) {
+    public void findClumpCenters() {
+        clumpCenters = new ArrayList<>();
+        for (ArrayList<int[]> cluster : clumps) {
             int clusterSize = cluster.size();
             double sumX = 0;
             double sumY = 0;
@@ -898,9 +808,9 @@ public class MyRobot extends BCAbstractRobot {
                     }
                 }
             }
-            mineClusterCenters.add(closestMatch);
+            clumpCenters.add(closestMatch);
         }
-        isMineColonized = new boolean[mineClusterCenters.size()];
+        isMineColonized = new boolean[clumpCenters.size()];
     }
     
     public boolean tilesInRange(int[] tile1, int[] tile2, int rangeSquared) {
@@ -1257,7 +1167,7 @@ public class MyRobot extends BCAbstractRobot {
         return sum;
     }
     
-    int[] findClosestMine() {
+    int[] findClosestDeposit() {
         int minDistance = this.mapYSize * this.mapYSize;
         int[] ans = null;
         
