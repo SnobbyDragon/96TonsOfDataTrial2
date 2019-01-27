@@ -1551,5 +1551,26 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return null;
 	}
-    
+    	public int[] searchForKarboniteLocation() {
+		double minDistance = Double.MAX_VALUE;
+		int minXCoordinate = -1;
+		int minYCoordinate = -1;
+		double distance;
+		log("My X: " + me.x);
+		log("My Y; " + me.y);
+		for (int i = 0; i < karboSpots.length; i++) {
+			log("Potential Karbo X: " + karboSpots[i][0]);
+			log("Potential Karbo Y: " + karboSpots[i][1]);
+			distance = findDistance(me, karboSpots[i][0], karboSpots[i][1]);
+			if (distance < minDistance) {
+				minDistance = distance;
+				minXCoordinate = karboSpots[i][0];
+				minYCoordinate = karboSpots[i][1];
+			}
+		}
+		int[] endPoint = { minXCoordinate, minYCoordinate };
+		log("Actual Karbo X: " + endPoint[0]);
+		log("Actual Karbo Y: " + endPoint[1]);
+		return endPoint;
+	}
 }
