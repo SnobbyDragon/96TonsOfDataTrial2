@@ -18,11 +18,10 @@ public class MyRobot extends BCAbstractRobot {
     public boolean[][] karboniteMap;
     public boolean[][] fuelMap;
     
-    public final int[][] adjacentSpaces = new int[][] {new int[] {0,1}, new int[] {-1,1}, new int[] {-1,0}, new int[] {-1,-1}, new int[] {0,-1}, new int[] {1,-1}, new int[] {1,0}, new int[] {1,1}};
+    public final int[][] adjacents = new int[][] {new int[] {0,1}, new int[] {-1,1}, new int[] {-1,0}, new int[] {-1,-1}, new int[] {0,-1}, new int[] {1,-1}, new int[] {1,0}, new int[] {1,1}};
     public int numCastles;
     public int[][] castleLocations = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
     public int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
-    public int globalTurn;
     public ArrayList<Integer>[] robots = new ArrayList[6];
     public int numFuelMines = 0;
     public int numKarbMines = 0;
@@ -32,10 +31,10 @@ public class MyRobot extends BCAbstractRobot {
     public ArrayList<int[]> path = null;
     public int pathIndex;
     
-    //prophet lattice
-    public int castleDir;
-    public int sideDir;
-    public boolean there;
+    //PROPHET LATTICE OP
+    public int castleDirection;
+    public int sideDirection;
+    public boolean inPosition;
     
     public int castleIndex;
     public int top;
@@ -74,11 +73,7 @@ public class MyRobot extends BCAbstractRobot {
                 robots[i] = new ArrayList<Integer>();
             }
             
-            horizontalReflection = this.getReflDir();
-        }
-        else
-        {
-            globalTurn += 1;
+            horizontalReflection = this.reflect();
         }
         this.visibleRobotMap = this.getVisibleRobotMap();
         switch (me.unit) {
@@ -248,13 +243,10 @@ public class MyRobot extends BCAbstractRobot {
         if(numPilgrims >= maxPilgrims) {
             if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) {
             	if (waitForChurch()) {
+        			this.log("waiting for church");
         			return null;
         		}
-            	int doit = -1;
-                if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
-                    doit = 0;
-                }
-                if (doit == 0) {
+                if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
                     int[] build = checkAdjacentAvailableRandom();
                     if(build != null)
                     {
@@ -314,24 +306,19 @@ public class MyRobot extends BCAbstractRobot {
         
         // prophet lattice
         if(numPilgrims >= maxPilgrims) {
-        	if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6) {
-        		if (waitForChurch()) {
+        	if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) {
+            	if (waitForChurch()) {
+        			this.log("waiting for church");
         			return null;
         		}
-        		if (karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) {
-        			int doit = -1;
-        			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
-        				doit = 0;
-        			}
-        			if (doit == 0) {
-        				int[] build = checkAdjacentAvailableRandom();
-        				if(build != null)
-        				{
-        					castleTalk(4);
-        					return buildUnit(4, build[0], build[1]);
-        				}
-        			}
-        		}
+                if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
+                    int[] build = checkAdjacentAvailableRandom();
+                    if(build != null)
+                    {
+                        castleTalk(4);
+                        return buildUnit(4, build[0], build[1]);
+                    }
+                }
             }
         }
         return null;
@@ -339,12 +326,12 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action pilgrim() {
     	if (me.turn == 1) {
-            getHomeCastle();
+            getCastle();
             getEnemyCastleLocs();
             maxPilgrims = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
         }
     	Robot base = null;
-        for (int[] move : adjacentSpaces) {
+        for (int[] move : adjacents) {
             int testX = me.x + move[0];
             int testY = me.y + move[1];
             if (testX <= -1 || testX >= this.mapXSize || testY <= -1 || testY >= this.mapYSize) { //invalid spot
@@ -415,6 +402,7 @@ public class MyRobot extends BCAbstractRobot {
                 }
                 //can't build a church b/c not enough resources (probs karbonite)
                 if (this.fuel > SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL*2) {
+                	this.log("wait for church");
                 	this.signal(6969, findFarthestCastle());
                 }
                 return null;
@@ -443,39 +431,6 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action crusader()
     {
-        
-//        if (me.turn == 1)
-//        {
-//            getHomeCastle();
-//            getCastleDir();
-//            if(castleDir % 2 == 0)
-//            {
-//                sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
-//            }
-//        }
-//        
-//        int[] atk = autoAttack();
-//        if(atk != null)
-//        {
-//            if(fuel >= 10)
-//            {
-//                return attack(atk[0], atk[1]);
-//            }
-//            else
-//            {
-//                return null;
-//            }
-//        }
-//        
-//        else {
-//            if(moveAway()) {
-//                int[] mov = exploreLattice();
-//                if(mov != null) {
-//                    return move(mov[0], mov[1]);
-//                }
-//            }
-//            
-//        }
         return null;
     }
     
@@ -483,8 +438,8 @@ public class MyRobot extends BCAbstractRobot {
     {
         if (me.turn == 1)
         {
-            getHomeCastle();
-            there = false;
+            getCastle();
+            inPosition = false;
         }
         
         Robot badGuy = this.findPrimaryEnemyTypeDistance(this.findBadGuys());
@@ -492,7 +447,7 @@ public class MyRobot extends BCAbstractRobot {
             //attack
             return attack(badGuy.x - this.me.x, badGuy.y - this.me.y);
         }
-        if(!there)
+        if(!inPosition)
         {
             if (path == null || path.size() <= pathIndex || visibleRobotMap[path.get(pathIndex)[1]][path.get(pathIndex)[0]] > 0)
             {
@@ -506,7 +461,7 @@ public class MyRobot extends BCAbstractRobot {
                 {
                     if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
                     {
-                        there = true;
+                        inPosition = true;
                     }
                     return move(mov[0], mov[1]);
                 }
@@ -516,7 +471,7 @@ public class MyRobot extends BCAbstractRobot {
             int[] mov = new int[] {path.get(pathIndex)[0] - me.x, path.get(pathIndex)[1] - me.y};
             pathIndex += 1;
             if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !adjacentToHome(me.x + mov[0], me.y + mov[1])) {
-                there = true;
+                inPosition = true;
             }
             return move(mov[0], mov[1]);
         }
@@ -527,11 +482,11 @@ public class MyRobot extends BCAbstractRobot {
     {
         if (me.turn == 1)
         {
-            getCastleDir();
-            getHomeCastle();
-            if(castleDir % 2 == 0)
+            findCastleDirection();
+            getCastle();
+            if(castleDirection % 2 == 0)
             {
-                sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
+                sideDirection = (((int) (Math.random() * 2)) * 4 + castleDirection + 2) % 8;
             }
         }
         
@@ -544,14 +499,13 @@ public class MyRobot extends BCAbstractRobot {
         return null;
     }
     
-    public boolean getReflDir() // set hRefl
-    {
+    public boolean reflect() {
         int top = (this.mapYSize + 1) / 2;
         int left = (this.mapXSize + 1) / 2;
         
-        for (int i = 0; i < top; i++) // Goes through top left quarter of map and tests one cell at a time
-        { // for whether it's reflected horizontally then vertically.
-            for (int j = 0; j < left; j++) // If a discrepancy is found, method returns.
+        for (int i = 0; i < top; i++) 
+        { 
+            for (int j = 0; j < left; j++)
             {
                 if (this.passableMap[i][j] != this.passableMap[this.mapYSize - 1 - i][j]) {
                     return true;
@@ -560,7 +514,7 @@ public class MyRobot extends BCAbstractRobot {
                 }
             }
         }
-        for (int i = this.mapYSize; i > top; i--) // Checks bottom right quarter same way just in case no return yet.
+        for (int i = this.mapYSize; i > top; i--)
         {
             for (int j = this.mapXSize; j > left; j--) {
                 if (this.passableMap[i][j] != this.passableMap[this.mapYSize - 1 - i][j]) {
@@ -573,15 +527,15 @@ public class MyRobot extends BCAbstractRobot {
         return true;
     }
     
-    public void getHomeCastle()
+    public void getCastle()
     {
         for(Robot r : getVisibleRobots())
         {
             if(r.unit == SPECS.CASTLE)
             {
                 castleLocations[0] = new int[] {r.x, r.y};
+                this.numCastles++;
                 robots[0].add(r.id);
-                globalTurn = r.turn;
             }
         }
     }
@@ -899,7 +853,7 @@ public class MyRobot extends BCAbstractRobot {
     			minDistance = this.findDistance(this.castleLocations[i]);
     		}
     	}
-    	return (int)Math.round(minDistance);
+    	return (int)Math.ceil(minDistance);
     }
     
     // Finds distance squared between two robots
@@ -916,16 +870,9 @@ public class MyRobot extends BCAbstractRobot {
         return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
     }
     
-    // Finds distance squared between two int[]s
-    public double findDistance(int[] one, int[] two) {
-        int xDistance = one[1] - two[1];
-        int yDistance = one[0] - two[0];
-        return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
-    }
-    
     public double findDistance(int[] location) {
-        int xDistance = location[1] - me.x;
-        int yDistance = location[0] - me.y;
+        int xDistance = location[0] - me.x;
+        int yDistance = location[1] - me.y;
         return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
     }
     
@@ -1173,7 +1120,7 @@ public class MyRobot extends BCAbstractRobot {
     public boolean waitForChurch() {
     	Robot[] robots = this.getVisibleRobots();
     	for (Robot r : robots) {
-    		if (this.isRadioing(r)) {
+    		if (this.isRadioing(r) && r.unit == SPECS.PILGRIM) {
     			if (r.signal == 6969) {
     				return true;
     			}
@@ -1311,16 +1258,13 @@ public class MyRobot extends BCAbstractRobot {
         pathIndex = 0;
         
         boolean occupied = visibleRobotMap[finalY][finalX] > 0;
-        //        int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+        int[] closest = null;
+        double minDistance = this.findDistance(finalX, finalY, this.me.x, this.me.y);
         int speed = this.getMovementRangeRadius(this.me.unit);
         LinkedList<int[]> toVisit = new LinkedList<int[]>();
         int[] current = new int[] { me.x, me.y };
         int[] tracer = new int[this.mapYSize * this.mapYSize];
         Arrays.fill(tracer, -1);
-        
-        // these two are only used if occupied == true
-        int[] closestSpot = null;
-        double closestDistance = this.findDistance(finalX, finalY, this.me.x, this.me.y);
         
         int dx, dy;
         int[] newSpot;
@@ -1343,9 +1287,9 @@ public class MyRobot extends BCAbstractRobot {
                         tracer[y * this.mapYSize + x] = current[1] * this.mapYSize + current[0];
                         
                         if (occupied) {
-                            if (this.findDistance(finalX, finalY, x, y) < closestDistance) {
-                                closestDistance = this.findDistance(finalX, finalY, x, y);
-                                closestSpot = newSpot;
+                            if (this.findDistance(finalX, finalY, x, y) < minDistance) {
+                                minDistance = this.findDistance(finalX, finalY, x, y);
+                                closest = newSpot;
                                 continue;
                             }
                         }
@@ -1354,197 +1298,126 @@ public class MyRobot extends BCAbstractRobot {
                 }
             }
             
-            if (occupied && closestSpot != null) {
-                current = closestSpot;
+            if (occupied && closest != null) {
+                current = closest;
                 break;
             }
             
             current = toVisit.poll();
             if (current == null) {
-                // log("exhausted all options");
                 return null;
             }
         }
-        ArrayList<int[]> ans = new ArrayList<>();
+        ArrayList<int[]> results = new ArrayList<>();
         while (tracer[current[1] * this.mapYSize + current[0]] != -1) {
-            ans.add(0, current);
+            results.add(0, current);
             int previous = tracer[current[1] * this.mapYSize + current[0]];
             current = new int[] { previous % this.mapYSize, (int) (previous / this.mapYSize) };
         }
-        return ans;
-    }
-    
-    public int[] availAdjSq(int[] target) //TODO
-    {
-        int i;
-        if(target[0] == 0)
-        {
-            i = target[1] * -2 + 2;
-        }
-        else if(target[0] == -1)
-        {
-            i = target[1] * -1 + 2;
-        }
-        else if(target[0] == 1)
-        {
-            i = target[1] + 6;
-        }
-        else 
-        {
-            
-            return null;
-        }
-        
-        int newX = me.x + adjacentSpaces[i][0];
-        int newY = me.y + adjacentSpaces[i][1];
-        
-        int delta = 1;
-        int sign = 1;
-        
-        while(newX < 0 || newX >= this.mapYSize || newY < 0 || newY >= this.mapYSize || !this.passableMap[newY][newX] || this.visibleRobotMap[newY][newX] > 0)
-        {
-            if(delta >= 8)
-            {
-                log("No adjacent movable spaces (from availAdjSq()).");
-                return null;
-            }
-            
-            i += delta * sign;
-            i %= 8;
-            
-            newX = me.x + adjacentSpaces[i][0];
-            newY = me.y + adjacentSpaces[i][1];
-            
-            delta += 1;
-            sign *= -1;
-        }
-        
-        return adjacentSpaces[i];
+        return results;
     }
     
     public int[] checkAdjacentAvailableRandom()
     {
-        int rand, newX, newY;
-        rand = (int) (Math.random() * 8);
+        int randomNum, x, y;
+        randomNum = (int) (Math.random() * 8);
         int i = 0;
         do
         {
-            rand += 1;
-            rand %= 8;
+            randomNum += 1;
+            randomNum %= 8;
             i++;
-            newX = me.x + adjacentSpaces[rand][0];
-            newY = me.y + adjacentSpaces[rand][1];
+            x = me.x + adjacents[randomNum][0];
+            y = me.y + adjacents[randomNum][1];
             
-            if(i >= 8)
-            {
+            if (i >= 8) {
                 return null;
             }
         }
-        while(newX < 0 || newX >= this.mapYSize || newY < 0 || newY >= this.mapYSize || !this.passableMap[newY][newX] || this.visibleRobotMap[newY][newX] > 0);
+        while(x < 0 || x >= this.mapYSize || y < 0 || y >= this.mapYSize || !this.passableMap[y][x] || this.visibleRobotMap[y][x] > 0);
         
-        return adjacentSpaces[rand];
+        return adjacents[randomNum];
     }
     
-    public int[] randomOddAdjSq()
-    {
-        int rand, newX, newY;
-        int pos = 1 - (me.x + me.y) % 2;
-        
-        rand = ((int) (Math.random() * 4)) * 2 + 1 + pos;
-        int i = 0;
-        do
-        {
-            i++;
-            if(i > 4)
-            {
-                return null;
-            }
-            
-            rand += 2;
-            rand %= 8;
-            newX = me.x + adjacentSpaces[rand][0];
-            newY = me.y + adjacentSpaces[rand][1];
-            
-        }
-        while(newX < 0 || newX >= this.mapYSize || newY < 0 || newY >= this.mapYSize || !this.passableMap[newY][newX] || this.visibleRobotMap[newY][newX] > 0);
-        
-        return adjacentSpaces[rand];
-    }
-    
-    public void getCastleDir()
+    public void findCastleDirection()
     {
         if(castleLocations[0][0] - me.x == 0)
         {
-            castleDir = castleLocations[0][1] - me.y * -2 + 2;
+            castleDirection = castleLocations[0][1] - me.y * -2 + 2;
         }
         else if(castleLocations[0][0] - me.x == -1)
         {
-            castleDir = castleLocations[0][1] - me.y * -1 + 2;
+            castleDirection = castleLocations[0][1] - me.y * -1 + 2;
         }
         else if(castleLocations[0][0] - me.x == 1)
         {
-            castleDir = castleLocations[0][1] - me.y + 6;
+            castleDirection = castleLocations[0][1] - me.y + 6;
         }
     }
     
     public int[] exploreLattice()
     {
-        int[] fpoo;
-        int newX, newY;
+        int[] spot;
+        int x, y;
         
-        if(castleDir % 2 == 0)
+        if(castleDirection % 2 == 0)
         {
-            int chooseDir = (int) (Math.random() * 2);
-            fpoo = (chooseDir == 0) ? (adjacentSpaces[(castleDir + 4) % 8]) : adjacentSpaces[sideDir];
-            fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
+            int randomDirection = (int) (Math.random() * 2);
+            if (randomDirection == 0) {
+            	spot = adjacents[(castleDirection + 4) % 8];
+            }
+            else {
+            	spot = adjacents[sideDirection];
+            }
+            spot = new int[] {spot[0] * 2, spot[1] * 2};
             
-            newX = me.x + fpoo[0];
-            newY = me.y + fpoo[1];
-            if(newX >= 0 && newX < this.mapYSize && newY >= 0 && newY < this.mapYSize && this.passableMap[newY][newX] && this.visibleRobotMap[newY][newX] <= 0)
+            x = me.x + spot[0];
+            y = me.y + spot[1];
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
             {
-                return fpoo;
+                return spot;
             }
             
-            fpoo = (chooseDir != 0) ? (adjacentSpaces[(castleDir + 4) % 8]) : adjacentSpaces[sideDir];
-            fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
+            spot = (randomDirection != 0) ? (adjacents[(castleDirection + 4) % 8]) : adjacents[sideDirection];
+            spot = new int[] {spot[0] * 2, spot[1] * 2};
             
-            newX = me.x + fpoo[0];
-            newY = me.y + fpoo[1];
-            if(newX >= 0 && newX < this.mapYSize && newY >= 0 && newY < this.mapYSize && this.passableMap[newY][newX] && this.visibleRobotMap[newY][newX] <= 0)
+            x = me.x + spot[0];
+            y = me.y + spot[1];
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
             {
-                return fpoo;
+                return spot;
             }
         }
         else
         {
-            int chooseDir = ((int) (Math.random() * 2)) * 2 - 1;
-            fpoo = adjacentSpaces[(castleDir + 4 + chooseDir) % 8];
-            fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
+            int randomDirection = ((int) (Math.random() * 2)) * 2 - 1;
+            spot = adjacents[(castleDirection + 4 + randomDirection) % 8];
+            spot = new int[] {spot[0] * 2, spot[1] * 2};
             
-            newX = me.x + fpoo[0];
-            newY = me.y + fpoo[1];
-            if(newX >= 0 && newX < this.mapYSize && newY >= 0 && newY < this.mapYSize && this.passableMap[newY][newX] && this.visibleRobotMap[newY][newX] <= 0)
+            x = me.x + spot[0];
+            y = me.y + spot[1];
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
             {
-                return fpoo;
+                return spot;
             }
             
-            fpoo = adjacentSpaces[(castleDir + 4 - chooseDir) % 8];
-            fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
+            spot = adjacents[(castleDirection + 4 - randomDirection) % 8];
+            spot = new int[] {spot[0] * 2, spot[1] * 2};
             
-            newX = me.x + fpoo[0];
-            newY = me.y + fpoo[1];
-            if(newX >= 0 && newX < this.mapYSize && newY >= 0 && newY < this.mapYSize && this.passableMap[newY][newX] && this.visibleRobotMap[newY][newX] <= 0)
+            x = me.x + spot[0];
+            y = me.y + spot[1];
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
             {
-                return fpoo;
+                return spot;
             }
         }
         
         return null;
     }
     
-    public boolean adjacentToHome(int newX, int newY)
+    public boolean adjacentToHome(int x, int y)
     {
-        if(Math.abs(newX - castleLocations[0][0]) <= 1 && Math.abs(newY - castleLocations[0][1]) <= 1)
+        if(Math.abs(x - castleLocations[0][0]) <= 1 && Math.abs(y - castleLocations[0][1]) <= 1)
         {
             return true;
         }
@@ -1574,32 +1447,6 @@ public class MyRobot extends BCAbstractRobot {
             }
         }
         return null;
-    }
-    
-    public boolean moveAway()
-    {
-        for(int dx = -2; dx <= 2; dx++)
-        {
-            for(int dy = -2; dy <= 2; dy++)
-            {
-                if((Math.abs(dx) == 2 && Math.abs(dy) == 2) || (dx == 0 && dy == 0))
-                {
-                    continue;
-                }
-                
-                int newX = me.x + dx;
-                int newY = me.y + dy;
-                if(!(newX < 0 || newX >= this.mapYSize || newY < 0 || newY >= this.mapYSize))
-                {
-                    int ID = this.visibleRobotMap[newY][newX];
-                    if(ID > 0 && getRobot(ID).team == me.team && (getRobot(ID).unit == 4 || getRobot(ID).unit == 0  || getRobot(ID).unit == 1))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
     
     public boolean onMap(int x, int y)
