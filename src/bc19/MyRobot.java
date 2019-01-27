@@ -17,21 +17,23 @@ public class MyRobot extends BCAbstractRobot {
     public boolean[][] fuelMap;
     public int mapYSize, mapXSize; //size of the map, length y and length x
     public String reflectAxis;
-    public boolean didToggle;
     public HashSet<int[]> karboLocations;
     public HashSet<int[]> fuelLocations;
     public int karboDepositNum;
     public int fuelDepositNum;
-    public int closeKarboNum, farKarboNum;
-    public int closeFuelNum, farFuelNum;
-    public final int CLOSE = 8;
     public ArrayList<String> directions = new ArrayList<String>(Arrays.asList("NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "SOUTHWEST", "WEST", "NORTHWEST"));
     public ArrayList<Integer> previousLocations = new ArrayList<Integer>();
     public boolean haveCastle = false;
-    public int[] castleLocation = new int[2]; //location of castle
-    public int[] crusaderTarget = new int[2]; //location of crusader target
+    public int numberOfCastles = 0;
+    public int[] castleIDs = new int[3]; //castle IDs
+    public int[][] castleLocations = new int[3][2]; //locations of castles
     public HashMap<String, Integer> bots = new HashMap<String, Integer>(); //castles know what bots they have created
-    public Stack<int[]> path = new Stack<int[]>();
+    public Stack<int[]> path = new Stack<int[]>(); //pathing with bfs
+    public ArrayList<HashSet<int[]>> clumpList;
+    public int clumpIndex = 0, depositIndex = 0;
+    public boolean settled = false; //can this pilgrim change clumps?? if settled, cant
+    public int[] clumpCenter;
+    public boolean foundClumpCenter = false;
     
     public Action turn() {
         turn++;
@@ -44,7 +46,6 @@ public class MyRobot extends BCAbstractRobot {
             
             //reflectivity
             reflectAxis = this.reflectAxis();
-            didToggle = false;
             
             //map size set
             mapYSize = passableMap.length;
@@ -59,74 +60,107 @@ public class MyRobot extends BCAbstractRobot {
             karboDepositNum = this.karboLocations.size();
             fuelDepositNum = this.fuelLocations.size();
             
-            //close and far deposits
-            closeKarboNum = this.findCloseKarboDepositNum(CLOSE); //closer than 8
-            this.log("close karbos = " + this.closeKarboNum);
-            closeFuelNum = this.findCloseFuelDepositNum(CLOSE); //closer than 8
-            this.log("close fuel = " + this.closeFuelNum);
-            
-            //sets crusade target
-            //            crusaderTarget.setint[](mapXSize/2, mapYSize/2);
-//            this.setCrusadeTarget();
-            
             //records number of robots
             bots.put("pilgrims", 0);
-            bots.put("crusaders", 0);
             bots.put("preachers", 0);
             bots.put("prophets", 0);
-            //this.log("x=" + this.me.x + " y=" + this.me.y);
-            //this.logMap(this.karboniteMap);
+            
+            //finding clumps
+            ArrayList<int[]> sortedResources = findSortedResources();
+//    		log("Sorted Resources: " + sortedResources);
+            clumpList = findAllClumps(sortedResources);
+//    		displayAllClumps(this.clumpList);
         }
         visibleRobotMap = this.getVisibleRobotMap(); //get visible robots every turn
         if (me.unit == SPECS.CASTLE) { //castle
-//            if (this.karbonite > 40 && this.turn <= 3) { //preachers to protect in the beginning
-//                if (this.canBuild(SPECS.PREACHER)) {
-//                    bots.put("preachers", bots.get("preachers") + 1);
-//                    return this.makeUnit(SPECS.PREACHER);
-//                }
-//            }
-            if (this.bots.get("pilgrims") < this.closeFuelNum + this.closeKarboNum) {
+        	if (me.turn == 1) {
+        		
+        		this.castleIDs[numberOfCastles] = this.me.id;
+        		this.castleLocations[numberOfCastles] = new int[] {me.y, me.x};
+        		numberOfCastles++;
+        		
+        		for (Robot r : getVisibleRobots()) { //tries to find friendly castles visible
+        			if (r.team == me.team && r.id != me.id) {
+        				castleIDs[numberOfCastles] = r.id;
+        				this.castleLocations[numberOfCastles] = new int[] {r.y, r.x};
+        				numberOfCastles += 1;
+        			}
+        		}
+
+        		if (this.numberOfCastles > 1)
+        		{
+        			castleTalk(me.x);
+        			for(int i = 1; i < this.numberOfCastles; i++)
+        			{
+        				Robot r = getRobot(this.castleIDs[i]);
+        				if(r.turn == 1) {
+        					this.castleLocations[i][1] = r.castle_talk;
+        				}
+        			}
+        		}
+        		
+        		return null; //can't make pilgrims or else will mess up count
+        	}
+        	
+        	else if (me.turn == 2) {
+        		if (this.numberOfCastles > 1)
+        		{
+        			castleTalk(me.y);
+
+        			for(int i = 1; i < this.numberOfCastles; i++) {
+        				Robot r = getRobot(this.castleIDs[i]);
+        				if(r.turn == 2) {
+        					this.castleLocations[i][0] = r.castle_talk;
+        				}
+        				else {
+        					this.castleLocations[i][1] = r.castle_talk;
+        				}
+        			}
+        		}
+        	}
+        	else if (me.turn == 3) {
+        		if (this.numberOfCastles > 1)
+        		{
+        			for(int i = 1; i < this.numberOfCastles; i++) {
+        				Robot r = getRobot(this.castleIDs[i]);
+        				if(r.turn == 2) {
+        					this.castleLocations[i][0] = r.castle_talk;
+        				}
+        			}
+        		}
+//        		this.log("number of castles = " + this.numberOfCastles);
+//        		this.log("castle location 1: x=" + this.castleLocations[0][1] + " y=" + this.castleLocations[0][0]);
+//        		this.log("castle location 2: x=" + this.castleLocations[1][1] + " y=" + this.castleLocations[1][0]);
+//        		this.log("castle location 3: x=" + this.castleLocations[2][1] + " y=" + this.castleLocations[2][0]);
+        	}
+        	if (this.bots.get("pilgrims") <= this.clumpList.get(this.clumpIndex).size()) { //makes 1 more pilgrim than necessary (to venture to another clump)
+        		if (this.canBuild(SPECS.PILGRIM))  {
+        			bots.put("pilgrims", bots.get("pilgrims") + 1);
+        			return this.makeUnit(SPECS.PILGRIM);
+        		}
+        	}
+        	//attacks enemies nearby
+        	HashSet<Robot> enemies = findBadGuys();
+        	Robot closeBadGuy = findPrimaryEnemyDistance(enemies);
+        	//log("Castle Health: " + me.health);
+        	if (closeBadGuy != null)
+        	{
+        		//log("found bad guy");
+        		//log("bad guy distance: " + closeBadGuy.x + ", " + closeBadGuy.y);
+
+        		try {
+        			//log("Attacked");
+        			return attack(closeBadGuy.x - me.x,closeBadGuy.y - me.y);
+        		} catch (Exception e) {
+        			//log("Failed to attack");
+        		}
+        	}
+        }
+        if (me.unit == SPECS.CHURCH) {
+        	if (this.bots.get("pilgrims") <= this.clumpList.get(this.clumpIndex).size()) { //makes 1 more pilgrim than necessary (to venture to another clump)
                 if (this.canBuild(SPECS.PILGRIM))  {
-                    //                    log("built pilgrim at x=" + this.checkAdjacentAvailable()[0] + " y=" + this.checkAdjacentAvailable()[1] + "\ncastle at x=" + this.me.x + " y=" + this.me.y);
                     bots.put("pilgrims", bots.get("pilgrims") + 1);
                     return this.makeUnit(SPECS.PILGRIM);
-                }
-            }
-//            if (bots.get("preachers") < 2) { //build 2 preachers
-//                if (this.canBuild(SPECS.PREACHER)) {
-//                    //                    log("built preacher");
-//                    bots.put("preachers", bots.get("preachers") + 1);
-//                    return this.makeUnit(SPECS.PREACHER);
-//                }
-//            }
-//            if (bots.get("crusaders") <= 5) { //build up to 5 crusaders per castle //TODO stop this nonsense
-//                if (this.canBuild(SPECS.CRUSADER)) {
-//                    //                    log("built crusader");
-//                    bots.put("crusaders", bots.get("crusaders") + 1);
-//                    return this.makeUnit(SPECS.CRUSADER);
-//                }
-//            }
-//            if (this.karbonite >= 50 && bots.get("prophets") <= 5) {
-//                if (this.canBuild(SPECS.PROPHET)) {
-//                    //                    log("built prophet");
-//                    bots.put("prophets", bots.get("prophets") + 1);
-//                    return this.makeUnit(SPECS.PROPHET);
-//                }
-//            }
-            //attacks enemies nearby
-            HashSet<Robot> enemies = findBadGuys();
-            Robot closeBadGuy = findPrimaryEnemyDistance(enemies);
-            //log("Castle Health: " + me.health);
-            if(closeBadGuy != null)
-            {
-                //log("found bad guy");
-                //log("bad guy distance: " + closeBadGuy.x + ", " + closeBadGuy.y);
-                
-                try {
-                    //log("Attacked");
-                    return attack(closeBadGuy.x - me.x,closeBadGuy.y - me.y);
-                } catch (Exception e) {
-                    //log("Failed to attack");
                 }
             }
         }
@@ -139,25 +173,44 @@ public class MyRobot extends BCAbstractRobot {
             //            log("My Castle Y: "+castleLocation.y);
             //            log("My X position: "+me.x);
             //            log("My Y position: "+me.y);
-            if (this.fuel < 500 && canMineFuel() || canMineKarbonite()) {
+            if (settled && (canMineFuel() || canMineKarbonite())) { //mining
                 //                this.log("mining");
                 return mine();
             }
-            if (!haveCastle) {
-                if(locateNearbyCastle()) {
-                    haveCastle = true;
-                }
+            if (!haveCastle && settled) { //need to find the castle/church
+            	this.castleLocations[0] = this.findMyCastle();
+            	if (this.castleLocations[0] != null) { //castle found
+            		haveCastle = true;
+            	}
             }
-            if (haveCastle && canGiveStuff()) {
+            if (settled && haveCastle && canGiveStuff()) { //give stuff to the castle
                 //                this.log("giving to castle, karbo=" + this.me.karbonite + " fuel=" + this.me.fuel);
-                return give(castleLocation[1] - this.me.x, castleLocation[0] - this.me.y, me.karbonite, me.fuel);
+                return give(castleLocations[0][1] - this.me.x, castleLocations[0][0] - this.me.y, me.karbonite, me.fuel);
             }
-            if (haveCastle && (me.karbonite==20||me.fuel==100)) {
+            if (this.foundClumpCenter && this.canBuild(SPECS.CHURCH) && this.findDistance(this.clumpCenter) <= 2 && this.findNearbyCastleChurchNum() == 0) { //can build church and adjacent to clump center and no nearby establishments
+            	this.settled = true;
+            	return this.buildUnit(SPECS.CHURCH, this.clumpCenter[1] - this.me.x, this.clumpCenter[0] - this.me.y);
+            }
+            if (settled && haveCastle && (me.karbonite==20||me.fuel==100)) { //return to the castle
                 //                this.log("returning to castle");
-                return this.pathFind(castleLocation);
-                //                path = this.bfs(castleLocation);
+            	path = this.bfs(castleLocations[0]);
             }
-            else {
+            else if (!settled) { //need to find a clump
+            	int nearbyPilgrimNum = this.findNearbyPilgrimNum();
+            	if (nearbyPilgrimNum == this.clumpList.get(this.clumpIndex).size()) { //there are enough pilgrims for this clump, so move to next clump
+            		if (!this.foundClumpCenter) {
+            			this.clumpIndex++;
+            			this.clumpCenter = this.findClumpCenter(this.clumpList.get(this.clumpIndex));
+            			this.foundClumpCenter = this.clumpCenter != null;
+            		}
+            		this.path = this.bfs(this.clumpCenter);
+            	}
+            	else { //not enough pilgrims for this clump
+            		this.settled = true; //stay at this clump
+            		this.depositIndex = nearbyPilgrimNum; //assigned to the next open deposit
+            	}
+            }
+            else { //settled in a clump, finding deposits
                 int[] closestKarbonite = this.searchForKarboniteLocation();
                 int[] closestFuel = this.searchForFuelLocation();
                 //                this.log("karbo distance=" + findDistance(this.me, closestKarbonite[1], closestKarbonite[0]));
@@ -183,54 +236,7 @@ public class MyRobot extends BCAbstractRobot {
                 return this.move(spot[1] - this.me.x, spot[0] - this.me.y);
             }
         }
-        if (me.unit == SPECS.CRUSADER) { //crusader
-            //move crusade target every so turns
-            //            this.log(crusaderTarget.x + " " + crusaderTarget.y);
-            if (fuel >= 10) {
-                HashSet<Robot> enemies = findBadGuys();
-                if (enemies.isEmpty() && this.fuel > 100) {
-                    return this.pathFind(crusaderTarget);
-                }
-                //                return this.crusaderAttack(enemies);
-                //                log("Enemies size: "+enemies.size());
-                Robot closeBadGuy = findPrimaryEnemyTypeDistance(enemies);
-                try {
-                    log("Other bad guy data " + closeBadGuy.x);
-                    return attack(closeBadGuy.x - me.x,closeBadGuy.y - me.y);
-                } catch (Exception e) {
-                    log("Can't attack the man");
-                    try {
-                        return pathFind(new int[] {closeBadGuy.y, closeBadGuy.x});
-                    } catch (Exception ef) {
-                        log("Can't find the man");
-                    }
-                }
-            }
-        }
         if (me.unit==SPECS.PREACHER) { //preacher
-            //            if (!this.haveCastle) {
-            //                this.locateNearbyCastle();
-            //            }
-            //            if (this.haveCastle && this.isAdjacentToCastle()) { //get out of the way
-            //
-            //            }
-            //            this.log(this.me.unit + " ");
-            //            this.log("PREACHER=" + SPECS.PREACHER + "   PILGRIM=" + SPECS.PILGRIM);
-            //            Iterator<int[]> iter = karboLocations.iterator();
-            //            int[] p = iter.next();
-            //            int[] p2 = new int[](p[1], p[0]);
-            //            this.log((p.equals(p2)&&p.hashCode()==p2.hashCode()) + "");
-            //            this.log(this.karboLocations.contains(p2) + " karbo");
-            //            this.log(this.karboLocations.contains(new int[](this.me.x, this.me.y)) + " on a karbo");
-            //            this.log(this.fuelLocations.contains(new int[](this.me.x, this.me.y)) + " on a fuel");
-            //            if (this.karboLocations.contains(new int[](this.me.x, this.me.y)) || this.fuelLocations.contains(new int[](this.me.x, this.me.y))) { //TODO: doesn't work
-            //                this.log("on a deposit");
-            //            }
-            
-//            if (this.isAdjacentToCastle() || this.onFuel() || this.onKarbo()) { //next to castle, or on a deposit
-//                //TODO
-////                return this.preacherMovesOutOfTheWay();
-//            }
             if (fuel >= 15) { //optimized attack
                 //                //investigating AoE --> 3x3 area. it's the attacked square and all the adjacents to that square
                 //                this.log(this.me.health + " health");
@@ -239,32 +245,10 @@ public class MyRobot extends BCAbstractRobot {
                 if (!potentialEnemies.isEmpty()) {
                     return this.preacherAttack();
                 }
-                //                AttackAction maybeSauce = preacherAttack(potentialEnemies);
-                //                if (maybeSauce != null) {
-                //                    return maybeSauce;
-                //                }
-                //                HashSet<Robot> enemies = findBadGuys();
-                //                Robot targetBadGuy = this.findPrimaryEnemyDistance(enemies);
-                //                try {
-                //                    return attack(targetBadGuy.x-me.x,targetBadGuy.y-me.y);
-                //                } catch (Exception e) {
-                //                    this.log(e.getMessage());
-                //                }
             }
-//            if (this.onFuel() || this.onKarbo()) {
-//                
-//            }
         }
         if (me.unit == SPECS.PROPHET) { //prophet
-            HashSet<Robot> enemies = findBadGuys();
-            if (enemies.isEmpty() && this.fuel > 100) {
-                return this.pathFind(crusaderTarget);
-            }
-            Robot enemy = this.findPrimaryEnemyTypeDistance(enemies);
-            if (this.canAttack(this.findDistance(this.me, enemy))) {
-                //                this.log("prophet attacking");
-                return this.attack(enemy.x - this.me.x, enemy.y - this.me.y);
-            }
+            
         }
         return null;
     }
@@ -287,264 +271,168 @@ public class MyRobot extends BCAbstractRobot {
         }
     }
     
-    //crusaders attack TODO clogging??
-//    public Action crusaderAttack(HashSet<Robot> potentialEnemies) {
-//    	//Create arraylist of preachers, prophets, crusaders, castles, churches, pilgrims
-//    	ArrayList<Robot> preachers = new ArrayList<Robot>();
-//    	ArrayList<Robot> prophets = new ArrayList<Robot>();
-//    	ArrayList<Robot> crusaders = new ArrayList<Robot>();
-//    	ArrayList<Robot> castles = new ArrayList<Robot>();
-//    	ArrayList<Robot> churches = new ArrayList<Robot>();
-//    	ArrayList<Robot> pilgrims = new ArrayList<Robot>();
-//    	//Iterate through potentialEnemies and do the following
-//    	Iterator<Robot> potentialEnemiesIterator = potentialEnemies.iterator();
-//    	while(potentialEnemiesIterator.hasNext()) {
-//    		Robot enemy = potentialEnemiesIterator.next();
-//    		//Check the type
-//    		//Based on the type, it would put it in the corresponding arraylist
-//    		if(enemy.unit==SPECS.PREACHER) {
-//    			preachers.add(enemy);
-//    		} else if(enemy.unit==SPECS.PROPHET) {
-//    			prophets.add(enemy);
-//    		} else if(enemy.unit==SPECS.CRUSADER) {
-//    			crusaders.add(enemy);
-//    		} else if(enemy.unit==SPECS.CASTLE) {
-//    			castles.add(enemy);
-//    		} else if(enemy.unit==SPECS.CHURCH) {
-//    			churches.add(enemy);
-//    		} else if(enemy.unit==SPECS.PILGRIM) {
-//    			pilgrims.add(enemy);
-//    		}
-//    	}
-//    	//ArrayList sorts at very end
-//    	preachers = sortArrayListByDistance(preachers);
-//    	prophets = sortArrayListByDistance(prophets);
-//    	crusaders = sortArrayListByDistance(crusaders);
-//    	castles = sortArrayListByDistance(castles);
-//    	churches = sortArrayListByDistance(churches);
-//    	pilgrims = sortArrayListByDistance(pilgrims);
-//
-//    	//sortArrayListByDistance(ArrayList<Robot> robots)
-//    	//Run through preacher arraylist
-//    	for(int i=0;i<preachers.size();i++) {
-//    		Robot thePreacher=preachers.get(i);
-//    		int distanceX=thePreacher.x-me.x;
-//    		int distanceY=thePreacher.y-me.y;
-//    		AttackAction potentialAttack=attack(distanceX,distanceY);
-//    		//Keep trying to attack them
-//    		if(potentialAttack!=null) {
-//    			return potentialAttack;
-//    		}
-//    	}
-//
-//    	//Run through prophet arraylist
-//    	for (int i=0;i<prophets.size();i++) {
-//    		Robot theProphet=prophets.get(i);
-//    		int distanceX=theProphet.x-me.x;
-//    		int distanceY=theProphet.y-me.y;
-//    		AttackAction potentialAttack=attack(distanceX,distanceY);
-//    		//Keep trying to attack them
-//    		if(potentialAttack!=null) {
-//    			return potentialAttack;
-//    		}
-//    	}
-//
-//    	//If attack fails, return move towards prophets
-//    	for (int i = 0; i < prophets.size(); i++) {
-//    		Robot theProphet=prophets.get(i);
-//    		//            int distanceX=theProphet.x-me.x;
-//    		//            int distanceY=theProphet.y-me.y;
-//    		//pathfind here
-//    		return this.pathFind(new int[](theProphet.x, theProphet.y));
-//    	}
-//
-//    	//Run through crusader arraylist
-//    	for (int i=0;i<crusaders.size();i++) {
-//    		Robot theCrusader=crusaders.get(i);
-//    		int distanceX=theCrusader.x-me.x;
-//    		int distanceY=theCrusader.y-me.y;
-//    		AttackAction potentialAttack=attack(distanceX,distanceY);
-//    		//Keep trying to attack them
-//    		if(potentialAttack!=null) {
-//    			return potentialAttack;
-//    		}
-//    	}
-//
-//    	//Run through castle arraylist
-//    	for (int i=0;i<castles.size();i++) {
-//    		Robot theCastle=castles.get(i);
-//    		int distanceX=theCastle.x-me.x;
-//    		int distanceY=theCastle.y-me.y;
-//    		AttackAction potentialAttack=attack(distanceX,distanceY);
-//    		//Keep trying to attack them
-//    		if(potentialAttack!=null) {
-//    			return potentialAttack;
-//    		}
-//    	}
-//
-//    	//Run through church arraylist
-//    	for(int i=0;i<churches.size();i++) {
-//    		Robot theChurch=churches.get(i);
-//    		int distanceX=theChurch.x-me.x;
-//    		int distanceY=theChurch.y-me.y;
-//    		AttackAction potentialAttack=attack(distanceX,distanceY);
-//    		//Keep trying to attack them
-//    		if(potentialAttack!=null) {
-//    			return potentialAttack;
-//    		}
-//    	}
-//
-//    	//Run through pilgrim arraylist
-//    	for(int i=0;i<pilgrims.size();i++) {
-//    		Robot thePilgrim=pilgrims.get(i);
-//    		int distanceX=thePilgrim.x-me.x;
-//    		int distanceY=thePilgrim.y-me.y;
-//    		AttackAction potentialAttack=attack(distanceX,distanceY);
-//    		//Keep trying to attack them
-//    		if(potentialAttack!=null) {
-//    			return potentialAttack;
-//    		}
-//    	}
-//
-//    	//If attack fails, return move towards preachers
-//    	for(int i=0;i<preachers.size();i++) {
-//    		Robot thePreacher=preachers.get(i);
-//    		//            int distanceX=thePreacher.x-me.x;
-//    		//            int distanceY=thePreacher.y-me.y;
-//    		//pathfind here
-//    		return this.pathFind(new int[](thePreacher.x, thePreacher.y));
-//    	}
-//
-//    	//If attack fails, return move towards crusaders
-//    	for(int i=0;i<crusaders.size();i++) {
-//    		Robot theCrusader=crusaders.get(i);
-//    		//            int distanceX=theCrusader.x-me.x;
-//    		//            int distanceY=theCrusader.y-me.y;
-//    		//pathfind here
-//    		return this.pathFind(new int[](theCrusader.x, theCrusader.y));
-//    	}
-//
-//    	//If attack fails, return move towards castles
-//    	for(int i=0;i<castles.size();i++) {
-//    		Robot theCastles=castles.get(i);
-//    		//            int distanceX=theCastles.x-me.x;
-//    		//            int distanceY=theCastles.y-me.y;
-//    		//pathfind here
-//    		return this.pathFind(new int[](theCastles.x, theCastles.y));
-//    	}
-//
-//    	//If attack fails, return move towards churches
-//    	for(int i=0;i<churches.size();i++) {
-//    		Robot theChurches=churches.get(i);
-//    		//            int distanceX=theChurches.x-me.x;
-//    		//            int distanceY=theChurches.y-me.y;
-//    		//pathfind here
-//    		return this.pathFind(new int[](theChurches.x, theChurches.y));
-//    	}
-//
-//    	//If attack fails, return move towards pilgrims
-//    	for(int i=0;i<pilgrims.size();i++) {
-//    		Robot thePilgrim=pilgrims.get(i);
-//    		//            int distanceX=thePilgrim.x-me.x;
-//    		//            int distanceY=thePilgrim.y-me.y;
-//    		//pathfind here
-//    		return this.pathFind(new int[](thePilgrim.x, thePilgrim.y));
-//    	}
-//    	return null;
-//    }
-    
-    public ArrayList<Robot> sortArrayListByDistance(ArrayList<Robot> robots) {
-        robots=quickSort(robots,0,robots.size());
-        return robots;
-    }
-    
-    public ArrayList<Robot> quickSort(ArrayList<Robot> a, int start, int end) {
-        if(start<end) {
-            int pivot = partition(a, start, end);
-            // sort left sublist
-            quickSort(a,start,pivot-1);
-            // sort the right sublist
-            quickSort(a,pivot+1,end);
+ // Parse through karbonite map and fuel map and put locations in the same
+ 	// Make ArrayList of locations sorted with everything by distance to the castle
+
+ 	// Make ArrayList of clumps (which is an arraylist of arrays) technically
+
+ 	// Repeat the following until the HashMap size is 0
+
+ 	// Find the closest thing
+
+ 	// Put that in clump
+
+ 	// Go through ArrayList, and check if it was within 8 r^2 of any previous
+ 	// approved clump
+
+ 	// Once done with making a full clump, remove locations from the initial sorted
+ 	// ArrayList
+ 	public void displayAllClumps(ArrayList<HashSet<int[]>> allClumps) {
+ 		for(int i=0;i<allClumps.size();i++) {
+ 			log("Clump "+i+": "+allClumps.get(i));
+ 		}
+ 	}
+ 	
+ 	public ArrayList<HashSet<int[]>> findAllClumps(ArrayList<int[]> sortedResources) {
+ 		ArrayList<HashSet<int[]>> everyClump=new ArrayList<HashSet<int[]>>();
+ 		while(sortedResources.size()>0) {
+ 			everyClump.add(findClump(sortedResources));
+ 			int lastIndex=everyClump.size()-1;
+ 			Iterator<int[]> clumpRemovalFromArrayListIterator=everyClump.get(lastIndex).iterator();
+ 			while(clumpRemovalFromArrayListIterator.hasNext()) {
+ 				sortedResources.remove(clumpRemovalFromArrayListIterator.next());
+ 			}
+ 		}
+ 		return everyClump;
+ 	}
+ 	
+ 	
+ 	public HashSet<int[]> findClump(ArrayList<int[]> sortedResources) {
+ 		HashSet<int[]> clump = new HashSet<int[]>();
+ 		clump.add(sortedResources.get(0));
+ 		for (int i = 1; i < sortedResources.size(); i++) {
+ 			Iterator<int[]> clumpIterator=clump.iterator();
+ 			while(clumpIterator.hasNext()) {
+ 				int[] aClumpLocation=clumpIterator.next();
+ 				if(findDistance(sortedResources.get(i),aClumpLocation)<=9) {
+ 					clump.add(sortedResources.get(i));
+ 				}
+ 			}
+ 		}
+ 		return clump;
+ 	}
+
+ 	public ArrayList<int[]> findSortedResources() {
+ 		ArrayList<int[]> sortedResources = new ArrayList<int[]>();
+ 		// Goes through the map
+ 		// Checks to make sure I got my y's and x's correct
+ 		for (int y = 0; y < karboniteMap.length; y++) {
+ 			for (int x = 0; x < karboniteMap[y].length; x++) {
+ 				if (karboniteMap[y][x] == true) {
+ 					int[] location = new int[2];
+ 					location[0] = y;
+ 					location[1] = x;
+ 					sortedResources.add(location);
+ 				}
+ 				if (fuelMap[y][x] == true) {
+ 					int[] location = new int[2];
+ 					location[0] = y;
+ 					location[1] = x;
+ 					sortedResources.add(location);
+ 				}
+ 			}
+ 		}
+ 		quickSort(sortedResources, 0, sortedResources.size() - 1);
+ 		// At this point, sortedResources has all of the fuel and karbonite locations
+ 		// from the map
+ 		return sortedResources;
+ 	}
+
+ 	public void quickSort(ArrayList<int[]> resources, int start, int end) {
+ 		if (start < end) { // general case
+ 			int pivot = partition(resources, start, end);
+ 			// sort left sublist
+ 			quickSort(resources, start, pivot - 1);
+ 			// sort the right sublist
+ 			quickSort(resources, pivot + 1, end);
+ 		}
+ 	}
+
+ 	public int partition(ArrayList<int[]> resources, int start, int end) {
+ 		int[] pivot;
+ 		int endOfLeft;
+ 		int midIndex = (start + end) / 2;
+ 		swap(resources, start, midIndex);
+ 		pivot = resources.get(start);
+ 		endOfLeft = start;
+ 		for (int i = start + 1; i <= end; i++) {
+// 			log("Resources get i: " + resources.get(i));
+// 			log("Pivot: " + pivot);
+ 			if (findDistance(resources.get(i)) < findDistance(pivot)) {
+ 				endOfLeft = endOfLeft + 1;
+ 				swap(resources, endOfLeft, i);
+ 			}
+ 		}
+ 		swap(resources, start, endOfLeft);
+ 		return endOfLeft;
+ 	}
+
+ 	public static void swap(ArrayList<int[]> resources, int i, int j) {
+ 		int[] tmp = resources.get(i);
+ 		resources.set(i, resources.get(j));
+ 		resources.set(j, tmp);
+ 	}
+ 	
+ 	//returns (y,x)
+    //NOT (x,y)
+    public int[] findClumpCenter(HashSet<int[]> clump){
+        double length = (double)(clump.size());
+        int x = 0;
+        int y = 0;
+        for (int[] spot : clump){
+            x += spot[1];
+            y += spot[0];
         }
-        return a;
-    }
-    
-    public int partition(ArrayList<Robot> a, int start, int end) {
-        Robot pivot;
-        int endOfLeft;
-        int midIndex = (start+end)/2;
-        swap(a,start,midIndex);
-        pivot=a.get(start);
-        endOfLeft=start;
-        for (int i=start+1; i<=end; i++) {
-            double aiDistance=findDistance(me,a.get(i));
-            double pivotDistance=findDistance(me,pivot);
-            if (aiDistance<pivotDistance) {
-                endOfLeft=endOfLeft+1;
-                swap(a,endOfLeft,i);
-            }
+        x = (int)Math.round(x/length);
+        y = (int)Math.round(y/length);
+        
+        if (this.passableMap[y][x] && !this.karboniteMap[y][x] && !this.fuelMap[y][x]) { //main clump center is free to build on
+			return new int[] {y, x};
+		}
+        //otherwise find distance squared and pick the smallest one that is also free to build on
+        int distance, minDistance1 = Integer.MAX_VALUE, minDistance2 = Integer.MAX_VALUE;
+        int[] spot, bestSpot1 = null, bestSpot2 = null;
+        for (int r = Math.max(0, y - 1); r < Math.min(this.mapYSize, y + 2); r++) {
+        	for (int c = Math.max(0, x - 1); c < Math.min(this.mapXSize, x + 2); c++) {
+        		if (this.passableMap[r][c]) { //passable
+        			spot = new int[] {r, c};
+        			distance = 0;
+        			for (int[] deposit : clump) { //calculate the total distance squared
+        				distance += this.findDistance(spot, deposit);
+        			}
+        			if (distance < minDistance1 && !this.karboniteMap[r][c] && !this.fuelMap[r][c]) { //better option
+        				minDistance1 = distance;
+        				bestSpot1 = spot;
+        			}
+        			if (distance < minDistance2) { //last resort
+        				minDistance2 = distance;
+        				bestSpot2 = spot;
+        			}
+        		}
+        	}
         }
-        swap(a,start,endOfLeft);
-        return endOfLeft;
-    }
-    
-    public void swap(ArrayList<Robot> a, int i, int j) {
-        Robot tmp = a.get(i);
-        a.set(i, a.get(j));
-        a.set(j, tmp);
-    }
-    
-    //after destroying them, toggle reflection to find other castles
-    public void toggleReflection() {
-        if (!this.didToggle) { //only toggles once
-            if (this.reflectAxis.equals("horizontal")) {
-                this.reflectAxis = "vertical";
-            }
-            else {
-                this.reflectAxis = "horizontal";
-            }
-            this.didToggle = true;
+        if (bestSpot1 != null) {
+        	return bestSpot1;
         }
+        //otherwise pick the smallest distance squared that is on a deposit
+        if (bestSpot2 != null) {
+        	return bestSpot2;
+        }
+        this.log("clump center null");
+        return null; //this is really bad
     }
-    
-    //sets where we're attacking //USELESS
-//    public void setCrusadeTarget() {
-//        //        this.log(this.crusadeTurns + "");
-//        if (this.reflectAxis.equals("horizontal")) {
-//            this.crusaderTarget = new int[] {this.me.y, this.mapXSize - this.me.x};
-//        }
-//        else { //this.reflectAxis.equals("vertical")
-//            this.crusaderTarget = new int[] {this.mapYSize - this.me.y, this.me.x};
-//        }
-//        //        this.log(this.crusaderTarget.toString());
-//        //        else if (this.turn == 4*interval) { //up
-//        //            //            this.log("up crusade target");
-//        //            this.crusaderTarget.setint[](this.mapXSize/2, this.mapYSize/4);
-//        //        }
-//        //        else if (this.turn == 5*interval) { //up right
-//        //            this.crusaderTarget.setint[](this.mapXSize*3/4, this.mapYSize/4);
-//        //        }
-//        //        else if (this.turn == 6*interval) { //right
-//        //            this.crusaderTarget.setint[](this.mapXSize*3/4, this.mapYSize/2);
-//        //        }
-//        //        else if (this.turn == 7*interval) { //down right
-//        //            this.crusaderTarget.setint[](this.mapXSize*3/4, this.mapYSize*3/4);
-//        //        }
-//        //        else if (this.turn == 8*interval) { //down
-//        //            this.crusaderTarget.setint[](this.mapXSize/2, this.mapYSize*3/4);
-//        //        }
-//        //        else if (this.turn == 9*interval) { //down left
-//        //            this.crusaderTarget.setint[](this.mapXSize/4, this.mapYSize*3/4);
-//        //        }
-//        //        else if (this.turn == 10*interval) { //left
-//        //            this.crusaderTarget.setint[](this.mapXSize/4, this.mapYSize/2);
-//        //        }
-//        //        else if (this.turn == 11*interval) { //up left
-//        //            this.crusaderTarget.setint[](this.mapXSize/4, this.mapYSize/4);
-//        //        }
-//    }
-    
-    //checks reflectivity of the map
+
+	//checks reflectivity of the map
     public String reflectAxis(){
         for(int col = 0; col < this.passableMap.length/2+1; col++){
             for(int row = 0; row < this.passableMap.length; row++){
@@ -559,8 +447,8 @@ public class MyRobot extends BCAbstractRobot {
     
     //Can this pilgrim give stuff to the castle
     public boolean canGiveStuff() {
-        int absoluteXCastleDistance = Math.abs(castleLocation[1] - this.me.x);
-        int absoluteYCastleDistance = Math.abs(castleLocation[0] - this.me.y);
+        int absoluteXCastleDistance = Math.abs(castleLocations[0][1] - this.me.x);
+        int absoluteYCastleDistance = Math.abs(castleLocations[0][0] - this.me.y);
         if(absoluteXCastleDistance == 0 || absoluteXCastleDistance == 1) {
             if(absoluteYCastleDistance == 0 || absoluteYCastleDistance==1) {
                 return this.me.karbonite > 0 || this.me.fuel > 0;
@@ -569,19 +457,17 @@ public class MyRobot extends BCAbstractRobot {
         return false;
     }
     
-    public boolean locateNearbyCastle() {
-        HashSet<Robot> goodGuys = this.findGoodGuys();
-        Iterator<Robot> iter = goodGuys.iterator();
-        while (iter.hasNext()) {
-            Robot goodGuy = iter.next();
-            if(goodGuy.unit == SPECS.CASTLE && goodGuy.team == this.me.team) {
-                castleLocation[0] = goodGuy.y;
-                castleLocation[1] = goodGuy.x;
-                return true;
-            }
-        }
-        return false;
-    }
+    public int[] findMyCastle() {
+		int[] castleLocation = new int[2];
+		Robot[] visibleRobots = getVisibleRobots();
+		for(int i=0; i < visibleRobots.length; i++) {
+			if(visibleRobots[i].unit == SPECS.CASTLE) {
+				castleLocation[0] = visibleRobots[i].y;
+				castleLocation[1] = visibleRobots[i].x;
+			}
+		}
+		return castleLocation;
+	}
     
     //can this pilgrim mine karbonite
     public boolean canMineKarbonite() {
@@ -959,13 +845,8 @@ public class MyRobot extends BCAbstractRobot {
         return alreadyOccupied;
     }
     
-    //is this unit next to a castle?
-    public boolean isAdjacentToCastle() {
-        return Math.abs(this.me.x-this.castleLocation[1])==1 && Math.abs(this.me.y-this.castleLocation[0])==1;
-    }
-    
     //checks if adjacent tiles are available. used for making units. checks tiles closer to the middle of the map first. //TODO build pilgrims on deposits, and other units not on deposits. if possible
-    public int[] checkAdjacentAvailable() {
+    public int[] checkAdjacentBuildAvailable() {
         int x = this.me.x;
         int y = this.me.y;
         int dx = x - this.mapXSize/2;
@@ -1180,72 +1061,6 @@ public class MyRobot extends BCAbstractRobot {
         return fuelLocations;
     }
     
-    
-//    //gtfo preacher TODO: make this better
-//    public MoveAction preacherMovesOutOfTheWay() {
-//        MoveAction maybe=move(1,1);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe = move(-1,-1);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe=move(1,-1);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe=move(-1,1);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe = move(1,0);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe = move(-1,0);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe=move(0,1);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        maybe=move(0,-1);
-//        if(maybe!=null) {
-//            return maybe;
-//        }
-//        return null;
-//    }
-    
-    //is this robot on a karbo deposit
-    public boolean onKarbo() {
-        int[] p = new int[] {this.me.y, this.me.x};
-        Iterator<int[]> iter = this.karboLocations.iterator();
-        int[] location;
-        while (iter.hasNext()) {
-            location = iter.next();
-            if (location.equals(p)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    //is this robot on a fuel deposit
-    public boolean onFuel() {
-    	int[] p = new int[] {this.me.y, this.me.x};
-        Iterator<int[]> iter = this.fuelLocations.iterator();
-        int[] location;
-        while (iter.hasNext()) {
-            location = iter.next();
-            if (location.equals(p)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
     //searches for the closest karbonite
     public int[] searchForKarboniteLocation() {
         double minDistance = Double.MAX_VALUE;
@@ -1283,50 +1098,14 @@ public class MyRobot extends BCAbstractRobot {
                 minYCoordinate = location[0];
             }
         }
-        //        for (int i = 0; i < mapYSize; i++) {
-        //            for (int j = 0; j < mapXSize; j++) {
-        //                if (fuelMap[i][j] && visibleRobotMap[i][j]<=0 && (i!=this.me.y&&j!=this.me.x)) {
-        //                    distance = findDistance(me, j, i);
-        //                    if (distance < minDistance) {
-        //                        minDistance = distance;
-        //                        minXCoordinate = j;
-        //                        minYCoordinate = i;
-        //                    }
-        //                }
-        //            }
-        //        }
         return new int[] {minYCoordinate, minXCoordinate};
     }
     
     //builds a unit where available
     public Action makeUnit(int type) {
-        int[] spot = this.checkAdjacentAvailable(); //TODO build pilgrims on deposits if possible, otherwise don't build on deposits if possible
+        int[] spot = this.checkAdjacentBuildAvailable(); //TODO build pilgrims on deposits if possible, otherwise don't build on deposits if possible
         //this.log("x=" + spot[0] + " y=" + spot[1]);
         return this.buildUnit(type, spot[1] - this.me.x, spot[0] - this.me.y);
-    }
-    
-    //finds the number of close fuel deposits (fuel <= x tiles away from castle)
-    public int findCloseFuelDepositNum(int x) {
-        int num = 0;
-        Iterator<int[]> iter = this.fuelLocations.iterator();
-        int[] location;
-        while (iter.hasNext()) {
-            location = iter.next();
-            num += this.findDistance(this.me, location[1], location[0]) <= x ? 1 : 0;
-        }
-        return num;
-    }
-    
-    //finds the number of close karbo deposits (karbo <= x tiles away from castle)
-    public int findCloseKarboDepositNum(int x) {
-        int num = 0;
-        Iterator<int[]> iter = this.karboLocations.iterator();
-        int[] location;
-        while (iter.hasNext()) {
-            location = iter.next();
-            num += this.findDistance(this.me, location[1], location[0]) <= x ? 1 : 0;
-        }
-        return num;
     }
     
     // Finds distance squared between two robots
@@ -1350,23 +1129,41 @@ public class MyRobot extends BCAbstractRobot {
         return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
     }
     
-    //Finds distance squared between two pairs of coordinates
+    public double findDistance(int[] location) {
+		int xDistance = location[1] - me.x;
+		int yDistance = location[0] - me.y;
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+
+	//Finds distance squared between two pairs of coordinates
     public double findDistance(int x1, int y1, int x2, int y2) {
         int xDistance = x1 - x2;
         int yDistance = y1 - y2;
         return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
     }
     
-    //Finds all ally robots in vision range
-    public HashSet<Robot> findGoodGuys() {
-        HashSet<Robot> theGoodGuys = new HashSet<Robot>();
+    //finds all ally pilgrims nearby
+    public int findNearbyPilgrimNum() {
+    	int pilgrims = 0;
         Robot[] visibleBots = getVisibleRobots();
         for (int i = 0; i < visibleBots.length; i++) {
-            if (me.team == visibleBots[i].team) {
-                theGoodGuys.add(visibleBots[i]);
+            if (me.team == visibleBots[i].team && visibleBots[i].unit == SPECS.PILGRIM) {
+                pilgrims++;
             }
         }
-        return theGoodGuys;
+        return pilgrims;
+    }
+    
+    //find nearby castles/church num
+    public int findNearbyCastleChurchNum() {
+    	int x = 0;
+        Robot[] visibleBots = getVisibleRobots();
+        for (int i = 0; i < visibleBots.length; i++) {
+            if (me.team == visibleBots[i].team && (visibleBots[i].unit == SPECS.CASTLE || visibleBots[i].unit == SPECS.CHURCH)) {
+                x++;
+            }
+        }
+        return x;
     }
     
     //Finds all enemy robots in vision range
@@ -1463,13 +1260,9 @@ public class MyRobot extends BCAbstractRobot {
             robotMap[robot.y][robot.x] = this.getRobotValue(robot);
             //            this.log(robotMap[robot.y][robot.x] + "");
         }
-        //        this.logMap(robotMap);
-        //        int[][] weightedMap = new int[this.mapYSize][this.mapXSize]; //new int[this.getVisionRangeRadius(this.me.unit)*2+1][this.getVisionRangeRadius(this.me.unit)*2+1]; //TODO: size of vision radius. need to shift if I want to make this smaller matrix
-        //        this.log((this.me.y - maxAttackRange) + " " + this.me.y + " " + (this.me.y + maxAttackRange));
         int value;
         for (int r = Math.max(this.me.y - maxAttackRange, 1); r < Math.min(this.me.y + maxAttackRange + 1, this.mapYSize-1); r++) {
             for (int c = Math.max(this.me.x - maxAttackRange, 1); c < Math.min(this.me.x + maxAttackRange + 1, this.mapXSize-1); c++) {
-                //weightedMap[r][c] = this.averageAdjacent(robotMap, r, c);
                 if (this.canAttack(Math.sqrt(this.findDistance(this.me, c, r)))) {
                     //                    this.log("can attack");
                     value = this.sumAdjacent(robotMap, r, c);
@@ -1555,7 +1348,7 @@ public class MyRobot extends BCAbstractRobot {
     
     //can this unit be built? do we have enough fuel and karbonite? is there room?
     public boolean canBuild(int type) {
-        return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentAvailable()!=null;
+        return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentBuildAvailable()!=null;
     }
     
     //gets the movement speed radius of a unit
