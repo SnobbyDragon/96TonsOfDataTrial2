@@ -133,17 +133,33 @@ public class MyRobot extends BCAbstractRobot {
 //        		this.log("castle location 2: x=" + this.castleLocations[1][1] + " y=" + this.castleLocations[1][0]);
 //        		this.log("castle location 3: x=" + this.castleLocations[2][1] + " y=" + this.castleLocations[2][0]);
         	}
-        	if (this.bots.get("pilgrims") <= this.clumpList.get(this.clumpIndex).size()) { //makes 1 more pilgrim than necessary (to venture to another clump)
-        		if (this.canBuild(SPECS.PILGRIM))  {
-        			bots.put("pilgrims", bots.get("pilgrims") + 1);
-        			return this.makeUnit(SPECS.PILGRIM);
-        		}
+        	if (this.numberOfCastles >= this.clumpList.size()) { //no need to build churches
+        		if (this.bots.get("pilgrims") < this.clumpList.get(this.clumpIndex).size()) { //makes enough pilgrims
+            		if (this.canBuild(SPECS.PILGRIM))  {
+            			bots.put("pilgrims", bots.get("pilgrims") + 1);
+            			return this.makeUnit(SPECS.PILGRIM);
+            		}
+            	}
+//            	else {
+//            		if (this.canBuild(SPECS.PROPHET))  {
+//            			bots.put("prophets", bots.get("prophets") + 1);
+//            			return this.makeUnit(SPECS.PROPHET);
+//            		}
+//            	}
         	}
         	else {
-        		if (this.canBuild(SPECS.PROPHET))  {
-        			bots.put("prophets", bots.get("prophets") + 1);
-        			return this.makeUnit(SPECS.PROPHET);
-        		}
+        		if (this.bots.get("pilgrims") <= this.clumpList.get(this.clumpIndex).size()) { //makes 1 more pilgrim than necessary (to venture to another clump)
+            		if (this.canBuild(SPECS.PILGRIM))  {
+            			bots.put("pilgrims", bots.get("pilgrims") + 1);
+            			return this.makeUnit(SPECS.PILGRIM);
+            		}
+            	}
+//            	else {
+//            		if (this.canBuild(SPECS.PROPHET))  {
+//            			bots.put("prophets", bots.get("prophets") + 1);
+//            			return this.makeUnit(SPECS.PROPHET);
+//            		}
+//            	}
         	}
         	//attacks enemies nearby
         	HashSet<Robot> enemies = findBadGuys();
@@ -185,7 +201,7 @@ public class MyRobot extends BCAbstractRobot {
             //            log("My Castle Y: "+castleLocation.y);
             //            log("My X position: "+me.x);
             //            log("My Y position: "+me.y);
-            if (settled && (canMineFuel() || canMineKarbonite())) { //mining
+            if (canMineFuel() || canMineKarbonite()) { //mining
                 //                this.log("mining");
                 return mine();
             }
