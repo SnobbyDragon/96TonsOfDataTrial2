@@ -139,6 +139,12 @@ public class MyRobot extends BCAbstractRobot {
         			return this.makeUnit(SPECS.PILGRIM);
         		}
         	}
+        	else {
+        		if (this.canBuild(SPECS.PROPHET))  {
+        			bots.put("prophets", bots.get("prophets") + 1);
+        			return this.makeUnit(SPECS.PROPHET);
+        		}
+        	}
         	//attacks enemies nearby
         	HashSet<Robot> enemies = findBadGuys();
         	Robot closeBadGuy = findPrimaryEnemyDistance(enemies);
@@ -163,6 +169,12 @@ public class MyRobot extends BCAbstractRobot {
                     return this.makeUnit(SPECS.PILGRIM);
                 }
             }
+        	else {
+        		if (this.canBuild(SPECS.PROPHET))  {
+        			bots.put("prophets", bots.get("prophets") + 1);
+        			return this.makeUnit(SPECS.PROPHET);
+        		}
+        	}
         }
         if (me.unit == SPECS.PILGRIM) { //pilgrim
             //            log("I am a pilgrim");
