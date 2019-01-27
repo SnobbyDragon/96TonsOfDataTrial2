@@ -38,7 +38,7 @@ public class MyRobot extends BCAbstractRobot {
     public int pilgrimLim; // will be slightly higher for non-castles, fine since it's just an approx for them
     
     // For pathing
-    public ArrayList<int[]> currentPath = null;
+    public ArrayList<int[]> path = null;
     public int locInPath;
     
     // For lattice
@@ -52,7 +52,7 @@ public class MyRobot extends BCAbstractRobot {
     public int numUnits = 0;
     public int numKarbos = 0;
     public int numFuels = 0;
-    public int myMineScore;
+    public int depositsInClump;
     public int[][] allKarbos;
     public int[][] allFuels;
     public int[] allMineScores;
@@ -111,6 +111,7 @@ public class MyRobot extends BCAbstractRobot {
         if (me.turn == 1)
         {
         	fillAllMines();
+        	getMineScores();
             findClumps();
             findClumpCenters();
             
@@ -129,7 +130,7 @@ public class MyRobot extends BCAbstractRobot {
             int[] myMine = findClosestDeposit();
             for (int i = 0; i < clumps.size(); i++) {
                 if (clumps.get(i).contains(myMine)) {
-                    myMineScore = clumps.get(i).size();
+                    depositsInClump = clumps.get(i).size();
                     currentColonization = i;
                     isMineColonized[i] = true;
                 }
@@ -213,24 +214,29 @@ public class MyRobot extends BCAbstractRobot {
          * this.mapYSize) { continue; } if (robotMap[tryY][tryX] > 0) { haveNeighbors =
          * true; break; } } if (haveNeighbors) { signal(numUnits, 2); }
          */
-        if (numUnits < myMineScore) {
-            if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
-                || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
-                return null;
-            }
-            for (int[] move : adjacentSpaces) {
-                int buildX = me.x + move[0];
-                int buildY = me.y + move[1];
-                if (buildX <= -1 || buildX >= this.mapXSize || buildY <= -1 || buildY >= this.mapYSize
-                    || this.passableMap[buildY][buildX] || this.visibleRobotMap[buildY][buildX] > 0) {
-                    continue;
-                }
-                numUnits++;
-                log("castle is signalling their location at " + (64 * me.y + me.x));
-                signal(64 * me.y + me.x, 2);
-                castleTalk(currentColonization + 1);
-                return buildUnit(SPECS.PILGRIM, move[0], move[1]);
-            }
+        if (numUnits < depositsInClump) {
+//            if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+//                || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+//                return null;
+//            }
+//            for (int[] move : adjacentSpaces) {
+//                int buildX = me.x + move[0];
+//                int buildY = me.y + move[1];
+//                if (buildX <= -1 || buildX >= this.mapXSize || buildY <= -1 || buildY >= this.mapYSize
+//                    || this.passableMap[buildY][buildX] || this.visibleRobotMap[buildY][buildX] > 0) {
+//                    continue;
+//                }
+//                numUnits++;
+//                log("castle is signalling their location at " + (64 * me.y + me.x));
+//                signal(64 * me.y + me.x, 2);
+//                castleTalk(currentColonization + 1);
+//                return buildUnit(SPECS.PILGRIM, move[0], move[1]);
+//            }
+        	if (this.canBuild(SPECS.PILGRIM)) {
+        		numUnits++;
+        		int[] build = this.checkAdjacentBuildAvailable();
+        		return this.buildUnit(SPECS.PILGRIM, build[1] - this.me.x, build[0] - this.me.y);
+        	}
         }
         
         if (/* numUnits >= numMines || */fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
@@ -271,12 +277,12 @@ public class MyRobot extends BCAbstractRobot {
             int[] myMine = findClosestDeposit();
             for (ArrayList<int[]> cluster : clumps) {
                 if (cluster.contains(myMine)) {
-                    myMineScore = cluster.size();
+                    depositsInClump = cluster.size();
                 }
             }
-            log("church is awake with "+myMineScore+" mines");
+            log("church is awake with "+depositsInClump+" mines");
         }
-        if (numUnits < myMineScore) {
+        if (numUnits < depositsInClump) {
             log("trying to build pilgrim");
             if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
                 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
@@ -319,13 +325,13 @@ public class MyRobot extends BCAbstractRobot {
             }
         }
         
-        if (currentPath != null && currentPath.size() > 0) {
-            int[] nextMove = currentPath.get(0);
+        if (path != null && path.size() > 0) {
+            int[] nextMove = path.get(0);
             int dx = nextMove[0] - me.x;
             int dy = nextMove[1] - me.y;
             if (visibleRobotMap[nextMove[1]][nextMove[0]] <= 0) {
                 if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
-                    currentPath.remove(0);
+                    path.remove(0);
                     return move(dx, dy);
                 }
             }
@@ -337,16 +343,16 @@ public class MyRobot extends BCAbstractRobot {
                 return give(base.x - me.x, base.y - me.y, me.karbonite, me.fuel);
             }
             log("gary go from (" + me.x + ", " + me.y + ") to (" + HOME[0] + ", " + HOME[1] + ")");
-            currentPath = bfs(HOME[0], HOME[1]);
-            if (currentPath == null) {
+            path = bfs(HOME[0], HOME[1]);
+            if (path == null) {
                 log("gary no found home");
                 return null;
             }
-            int[] nextMove = currentPath.get(0);
+            int[] nextMove = path.get(0);
             int dx = nextMove[0] - me.x;
             int dy = nextMove[1] - me.y;
             if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
-                currentPath.remove(0);
+                path.remove(0);
                 log("gary going home");
                 return move(dx, dy);
             }
@@ -389,15 +395,15 @@ public class MyRobot extends BCAbstractRobot {
             location = HOME;
         }
         
-        currentPath = bfs(location[0], location[1]);
-        if (currentPath == null) {
+        path = bfs(location[0], location[1]);
+        if (path == null) {
             return null;
         }
-        int[] nextMove = currentPath.get(0);
+        int[] nextMove = path.get(0);
         int dx = nextMove[0] - me.x;
         int dy = nextMove[1] - me.y;
         if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
-            currentPath.remove(0);
+            path.remove(0);
             return move(dx, dy);
         }
         return null;
@@ -462,12 +468,12 @@ public class MyRobot extends BCAbstractRobot {
         
         if(!arrived && fuel >= pilgrimLim * 2)
         {
-            if (currentPath == null || currentPath.size() <= locInPath || visibleRobotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+            if (path == null || path.size() <= locInPath || visibleRobotMap[path.get(locInPath)[1]][path.get(locInPath)[0]] > 0)
             {
-                currentPath = goToLattice();
+                path = goToLattice();
             }
             
-            if (currentPath == null || currentPath.size() <= locInPath || visibleRobotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+            if (path == null || path.size() <= locInPath || visibleRobotMap[path.get(locInPath)[1]][path.get(locInPath)[0]] > 0)
             {
                 log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
                 
@@ -483,7 +489,7 @@ public class MyRobot extends BCAbstractRobot {
                 return null;
             }
             
-            int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+            int[] mov = new int[] {path.get(locInPath)[0] - me.x, path.get(locInPath)[1] - me.y};
             locInPath += 1;
             if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(me.x + mov[0], me.y + mov[1]))
             {
@@ -747,6 +753,20 @@ public class MyRobot extends BCAbstractRobot {
         for (int[] mine : allFuels) {
             allMines[i] = mine;
             i++;
+        }
+    }
+    
+    public void getMineScores() {
+        allMineScores = new int[allMines.length];
+        int index = 0;
+        for (int[] check : allMines) {
+            int count = 0;
+            for (int[] mine : allMines) {
+                if (tilesInRange(check, mine, clumpRadius2)) {
+                    count++;
+                }
+            }
+            allMineScores[index++] = count;
         }
     }
     
