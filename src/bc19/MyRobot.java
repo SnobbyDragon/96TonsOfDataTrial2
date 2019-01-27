@@ -20,6 +20,7 @@ public class MyRobot extends BCAbstractRobot {
     
     public final int[][] adjacents = new int[][] {new int[] {0,1}, new int[] {-1,1}, new int[] {-1,0}, new int[] {-1,-1}, new int[] {0,-1}, new int[] {1,-1}, new int[] {1,0}, new int[] {1,1}};
     public int numCastles;
+    public int deadCastles = 0;
     public int[] castleIDs = new int[3];
     public int[][] castleLocations = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
     public int[][] evilCastleLocations = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
@@ -91,19 +92,22 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action castle() {
         if (me.turn == 1) {
+        	
+        	numCastles = 1;
+        	this.castleLocations[0] = new int[] {me.x, me.y};
+            castleIDs[0] = me.id;
+            robots[0].add(me.id);
+            
         	fillAllMines();
         	getClumpDepositNums();
             findClumps();
             findClumpCenters();
             
-            numCastles = 1;
-            castleIDs[0] = me.id;
-            robots[0].add(me.id);
-            
             for (Robot r : getVisibleRobots()) {
                 if (r.team == me.team && r.id != me.id) {
                     castleIDs[numCastles] = r.id;
-                    numCastles ++;
+                    this.castleLocations[numCastles] = new int[] {r.x, r.y};
+                    numCastles++;
                     robots[0].add(r.id);
                 }
             }
@@ -114,6 +118,7 @@ public class MyRobot extends BCAbstractRobot {
                     depositsInClump = clumps.get(i).size();
                     clumpIndex = i;
                     isClumpOccupied[i] = true;
+                    break;
                 }
             }
             
@@ -132,11 +137,9 @@ public class MyRobot extends BCAbstractRobot {
                     }
                 }
             }
-            castleLocations[0] = new int[] {me.x, me.y};
             
             return null;
         }
-        
         else if (me.turn == 2)
         {
             if (numCastles > 1)
@@ -322,7 +325,7 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action pilgrim() {
     	if (me.turn == 1) {
-            getCastle();
+            this.getCastle();
             getEnemyCastleLocs();
             maxPilgrims = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
         }
@@ -397,10 +400,6 @@ public class MyRobot extends BCAbstractRobot {
                 	return buildUnit(SPECS.CHURCH, home[0] - me.x, home[1] - me.y);
                 }
                 //can't build a church b/c not enough resources (probs karbonite)
-                if (this.fuel > SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL*2) {
-                	this.log("wait for church");
-                	this.signal(6969, findFarthestCastle());
-                }
                 return null;
             }
             this.visibleRobotMap[home[1]][home[0]] = 4096;
@@ -525,7 +524,8 @@ public class MyRobot extends BCAbstractRobot {
     
     public void getCastle()
     {
-        for(Robot r : getVisibleRobots())
+    	Robot[] robo = getVisibleRobots();
+        for(Robot r : robo)
         {
             if(r.unit == SPECS.CASTLE)
             {
@@ -755,33 +755,138 @@ public class MyRobot extends BCAbstractRobot {
         }
     }
     
+    public void displayAllClumps(ArrayList<HashSet<int[]>> allClumps) {
+		for(int i=0;i<allClumps.size();i++) {
+			log("Clump "+i+": "+allClumps.get(i));
+		}
+	}
+	
+	public ArrayList<HashSet<int[]>> findAllClumps(ArrayList<int[]> sortedResources) {
+		ArrayList<HashSet<int[]>> everyClump=new ArrayList<HashSet<int[]>>();
+		while(sortedResources.size()>0) {
+			everyClump.add(findClump(sortedResources));
+			int lastIndex=everyClump.size()-1;
+			Iterator<int[]> clumpRemovalFromArrayListIterator=everyClump.get(lastIndex).iterator();
+			while(clumpRemovalFromArrayListIterator.hasNext()) {
+				sortedResources.remove(clumpRemovalFromArrayListIterator.next());
+			}
+		}
+		return everyClump;
+	}
+	
+	
+	public HashSet<int[]> findClump(ArrayList<int[]> sortedResources) {
+		HashSet<int[]> clump = new HashSet<int[]>();
+		clump.add(sortedResources.get(0));
+		for (int i = 1; i < sortedResources.size(); i++) {
+			Iterator<int[]> clumpIterator=clump.iterator();
+			while(clumpIterator.hasNext()) {
+				int[] aClumpLocation=clumpIterator.next();
+				if(this.findDistance(sortedResources.get(i), aClumpLocation)<=9) {
+					clump.add(sortedResources.get(i));
+				}
+			}
+		}
+		return clump;
+	}
+	
+	public double findDistance(int[] location1,int[] location2) {
+		int xDistance = location2[1] - location1[1];
+		int yDistance = location2[0] - location1[0];
+		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+	}
+    
+    public ArrayList<int[]> findSortedResources() {
+		boolean[][] karboniteMap = getKarboniteMap();
+		boolean[][] fuelMap = getFuelMap();
+		ArrayList<int[]> sortedResources = new ArrayList<int[]>();
+
+		// Goes through the map
+		// Checks to make sure I got my y's and x's correct
+		for (int y = 0; y < karboniteMap.length; y++) {
+			for (int x = 0; x < karboniteMap[y].length; x++) {
+				if (karboniteMap[y][x] == true) {
+					int[] location = new int[2];
+					location[0] = y;
+					location[1] = x;
+					sortedResources.add(location);
+				}
+				if (fuelMap[y][x] == true) {
+					int[] location = new int[2];
+					location[0] = y;
+					location[1] = x;
+					sortedResources.add(location);
+				}
+			}
+		}
+		quickSort(sortedResources, 0, sortedResources.size() - 1);
+		// At this point, sortedResources has all of the fuel and karbonite locations
+		// from the map
+		return sortedResources;
+	}
+
+	public void quickSort(ArrayList<int[]> resources, int start, int end) {
+		if (start < end) { // general case
+			int pivot = partition(resources, start, end);
+			// sort left sublist
+			quickSort(resources, start, pivot - 1);
+			// sort the right sublist
+			quickSort(resources, pivot + 1, end);
+		}
+	}
+
+	public int partition(ArrayList<int[]> resources, int start, int end) {
+		int[] pivot;
+		int endOfLeft;
+		int midIndex = (start + end) / 2;
+		swap(resources, start, midIndex);
+		pivot = resources.get(start);
+		endOfLeft = start;
+		for (int i = start + 1; i <= end; i++) {
+			log("Resources get i: " + resources.get(i));
+			log("Pivot: " + pivot);
+			if (findDistance(resources.get(i)) < findDistance(pivot)) {
+				endOfLeft = endOfLeft + 1;
+				swap(resources, endOfLeft, i);
+			}
+		}
+		swap(resources, start, endOfLeft);
+		return endOfLeft;
+	}
+
+	public static void swap(ArrayList<int[]> resources, int i, int j) {
+		int[] tmp = resources.get(i);
+		resources.set(i, resources.get(j));
+		resources.set(j, tmp);
+	}
+    
     public void findClumps() {
         ArrayList<int[]> deposits = new ArrayList<>();
         clumps = new ArrayList<>();
         while (deposits.size() != allDeposits.length) {
-            int bestIndex = -1;
+            int b = -1;
             for (int i = 0; i < clumpNumDeposits.length; i++) {
                 if (deposits.contains(allDeposits[i])) {
                     continue;
                 }
-                if (bestIndex == -1 || clumpNumDeposits[i] > clumpNumDeposits[bestIndex]) {
-                    bestIndex = i;
+                if (b == -1 || clumpNumDeposits[i] > clumpNumDeposits[b]) {
+                    b = i;
                 }
             }
-            int[] head = allDeposits[bestIndex];
-            ArrayList<int[]> currentCluster = new ArrayList<>();
-            currentCluster.add(head);
-            deposits.add(head);
+            int[] best = allDeposits[b];
+            ArrayList<int[]> currentClump = new ArrayList<>();
+            currentClump.add(best);
+            deposits.add(best);
             for (int[] mine : allDeposits) {
                 if (deposits.contains(mine)) {
                     continue;
                 }
-                if (tilesInRange(head, mine, clumpRadius2)) {
-                    currentCluster.add(mine);
+                if (tilesInRange(best, mine, clumpRadius2)) {
+                    currentClump.add(mine);
                     deposits.add(mine);
                 }
             }
-            clumps.add(currentCluster);
+            clumps.add(currentClump);
         }
     }
     
@@ -840,16 +945,6 @@ public class MyRobot extends BCAbstractRobot {
     public boolean tilesInRange(int[] tile1, int[] tile2, int rangeSquared) {
         return ((tile1[0] - tile2[0]) * (tile1[0] - tile2[0])
                 + (tile1[1] - tile2[1]) * (tile1[1] - tile2[1]) <= rangeSquared);
-    }
-    
-    public int findFarthestCastle() {
-    	double minDistance = 0;
-    	for (int i = 0; i < this.numCastles; i++) {
-    		if (this.findDistance(this.castleLocations[i]) > minDistance) {
-    			minDistance = this.findDistance(this.castleLocations[i]);
-    		}
-    	}
-    	return (int)Math.ceil(minDistance);
     }
     
     // Finds distance squared between two robots
@@ -1351,13 +1446,11 @@ public class MyRobot extends BCAbstractRobot {
         }
     }
     
-    public int[] exploreLattice()
+    public int[] goLattice()
     {
         int[] spot;
         int x, y;
-        
-        if(castleDirection % 2 == 0)
-        {
+        if(castleDirection % 2 == 0) {
             int randomDirection = (int) (Math.random() * 2);
             if (randomDirection == 0) {
             	spot = adjacents[(castleDirection + 4) % 8];
@@ -1366,44 +1459,33 @@ public class MyRobot extends BCAbstractRobot {
             	spot = adjacents[sideDirection];
             }
             spot = new int[] {spot[0] * 2, spot[1] * 2};
-            
             x = me.x + spot[0];
             y = me.y + spot[1];
-            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
-            {
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0) {
                 return spot;
             }
-            
             spot = (randomDirection != 0) ? (adjacents[(castleDirection + 4) % 8]) : adjacents[sideDirection];
             spot = new int[] {spot[0] * 2, spot[1] * 2};
-            
             x = me.x + spot[0];
             y = me.y + spot[1];
-            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
-            {
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0) {
                 return spot;
             }
         }
-        else
-        {
+        else {
             int randomDirection = ((int) (Math.random() * 2)) * 2 - 1;
             spot = adjacents[(castleDirection + 4 + randomDirection) % 8];
             spot = new int[] {spot[0] * 2, spot[1] * 2};
-            
             x = me.x + spot[0];
             y = me.y + spot[1];
-            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
-            {
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0) {
                 return spot;
             }
-            
             spot = adjacents[(castleDirection + 4 - randomDirection) % 8];
             spot = new int[] {spot[0] * 2, spot[1] * 2};
-            
             x = me.x + spot[0];
             y = me.y + spot[1];
-            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0)
-            {
+            if(x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize && this.passableMap[y][x] && this.visibleRobotMap[y][x] <= 0) {
                 return spot;
             }
         }
@@ -1449,5 +1531,19 @@ public class MyRobot extends BCAbstractRobot {
     {
         return (x >= 0 && x < this.mapYSize && y >= 0 && y < this.mapYSize);
     }
+    
+    public Robot getTheCastle(int num)
+	{
+		Robot[] visb = getVisibleRobots();
+
+		for(Robot cast : visb)
+		{
+			if(cast.id == robots[0].get(num))
+			{
+				return cast;
+			}
+		}
+		return null;
+	}
     
 }
