@@ -241,17 +241,23 @@ public class MyRobot extends BCAbstractRobot {
         // prophet lattice
         if(numPilgrims >= maxPilgrims) {
             if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) {
-            	if (waitForChurch()) {
-        			this.log("waiting for church");
-        			return null;
-        		}
-                if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
-                    int[] build = checkAdjacentAvailableRandom();
-                    if(build != null)
-                    {
-                        castleTalk(4);
-                        return buildUnit(4, build[0], build[1]);
-                    }
+                if (this.me.turn < 50 && this.karbonite < 50) {
+                	return null;
+                }
+                int shouldBuild;
+                if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + robots[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
+                	shouldBuild = 0;
+                }
+                else {
+                	shouldBuild = (int) (Math.random() * (robots[0].size() + robots[1].size()));
+                }
+                if (shouldBuild == 0) {
+                	int[] build = checkAdjacentAvailableRandom();
+                	if(build != null)
+                	{
+                		castleTalk(4);
+                		return buildUnit(4, build[0], build[1]);
+                	}
                 }
             }
         }
@@ -306,11 +312,19 @@ public class MyRobot extends BCAbstractRobot {
         // prophet lattice
         if(numPilgrims >= maxPilgrims) {
         	if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) {
-            	if (waitForChurch()) {
-        			this.log("waiting for church");
-        			return null;
-        		}
-                if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size()) {
+        		if (this.me.turn < 20 && this.karbonite < 50) {
+                	return null;
+                }
+        		int shouldBuild;
+                if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robots[0].size() + robots[1].size()) + 2 + robots[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robots[0].size())
+                {
+                    shouldBuild = 0;
+                }
+                else
+                {
+                    shouldBuild = (int) (Math.random() * (robots[0].size() + robots[1].size()));
+                }
+                if (shouldBuild == 0) {
                     int[] build = checkAdjacentAvailableRandom();
                     if(build != null)
                     {
@@ -1206,18 +1220,6 @@ public class MyRobot extends BCAbstractRobot {
     //gets attack damage
     public int getAttackDamage(int unit) {
         return SPECS.UNITS[unit].ATTACK_DAMAGE;
-    }
-    
-    public boolean waitForChurch() {
-    	Robot[] robots = this.getVisibleRobots();
-    	for (Robot r : robots) {
-    		if (this.isRadioing(r) && r.unit == SPECS.PILGRIM) {
-    			if (r.signal == 6969) {
-    				return true;
-    			}
-    		}
-    	}
-    	return false;
     }
     
     public AttackAction preacherAttack() {
