@@ -57,6 +57,8 @@ public class MyRobot extends BCAbstractRobot {
     
     
     public Action turn() {
+    	log("Global karbonite: "+karbonite);
+	log("Global fuel: "+fuel);
         if (me.turn == 1) {
             this.passableMap = this.getPassableMap();
             this.mapYSize = this.passableMap.length;
@@ -404,6 +406,7 @@ public class MyRobot extends BCAbstractRobot {
         int[] point;
         if (this.visibleRobotMap[home[1]][home[0]] > 0) { //home in sight, go to deposits to mine
             if(karbonite*7<fuel) {
+	    	log("Karbo crisis");
               point= searchForKarboniteLocation();
             } else {
             point = findClosestDeposit();
