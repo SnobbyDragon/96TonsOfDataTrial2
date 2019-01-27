@@ -8,10 +8,12 @@ import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
     // important
-	public int mapYSize, mapXSize; //size of the map, length y and length x
+    public int mapYSize, mapXSize; //size of the map, length y and length x
     public boolean horizontalReflection;
     public int[][] visibleRobotMap;
     public boolean[][] passableMap;
+    public boolean[][] karboniteMap;
+    public boolean[][] fuelMap;
     public int xorKey; // XOR any signal by this, and any castletalk by this % 256
     // Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
     // separately; don't worry 'bout it.
@@ -25,7 +27,7 @@ public class MyRobot extends BCAbstractRobot {
     new int[] {1,0},
     new int[] {1,1}
     };
-    public int numCastles; // DO NOT USE for castles. Use robots[0].size() instead.
+    public int numCastles; // DO NOT USE for castles. Use numCastles instead.
     public int ourDeadCastles = 0;
     public int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
     public int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
@@ -72,9 +74,11 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action turn() {
         if (me.turn == 1) {
-        	this.mapYSize = this.map.length;
-        	this.mapXSize = this.map[0].length;
-        	this.passableMap = this.getPassableMap();
+            this.mapYSize = this.map.length;
+            this.mapXSize = this.map[0].length;
+            this.passableMap = this.getPassableMap();
+            this.karboniteMap = this.getKarboniteMap();
+            this.fuelMap = this.getFuelMap();
             for(int i = 0; i < 6; i++)
             {
                 robots[i] = new ArrayList<Integer>();
@@ -106,19 +110,22 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     public Action castle() {
-    	if (me.turn == 1) {
-            fillAllMines();
+        if (me.turn == 1)
+        {
+        	fillAllMines();
             getMineScores();
             identifyClusters();
             findClusterCenters();
             
             numCastles = 1;
             castleIDs[0] = me.id;
+            robots[0].add(me.id);
             
             for (Robot r : getVisibleRobots()) {
                 if (r.team == me.team && r.id != me.id) {
                     castleIDs[numCastles] = r.id;
                     numCastles += 1;
+                    robots[0].add(r.id);
                 }
             }
             
@@ -131,6 +138,63 @@ public class MyRobot extends BCAbstractRobot {
                     isMineColonized[i] = true;
                 }
             }
+            
+            pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
+            
+            if (numCastles > 1)
+            {
+                castleTalk(me.x ^ (xorKey % 256));
+                
+                for(int i = 1; i < numCastles; i++)
+                {
+                    Robot castle = getRobot(robots[0].get(i));
+                    if(castle.turn == 1)
+                    {
+                        castleLocs[i][0] = castle.castle_talk ^ (xorKey % 256);
+                    }
+                }
+            }
+            castleLocs[0] = new int[] {me.x, me.y};
+            
+            return null;
+        }
+        
+        else if (me.turn == 2)
+        {
+            if (numCastles > 1)
+            {
+                castleTalk(me.y ^ (xorKey % 256));
+                
+                for(int i = 1; i < numCastles; i++)
+                {
+                    Robot cast = getRobot(robots[0].get(i));
+                    if(cast.turn == 2)
+                    {
+                        castleLocs[i][1] = cast.castle_talk ^ (xorKey % 256);
+                    }
+                    else
+                    {
+                        castleLocs[i][0] = cast.castle_talk ^ (xorKey % 256);
+                    }
+                }
+            }
+        }
+        
+        else if(me.turn == 3)
+        {
+            if (numCastles > 1)
+            {
+                for(int i = 1; i < numCastles; i++)
+                {
+                    Robot cast = getRobot(robots[0].get(i));
+                    if(cast.turn == 2)
+                    {
+                        castleLocs[i][1] = cast.castle_talk ^ (xorKey % 256);
+                    }
+                }
+            }
+            getEnemyCastleLocs();
+            log("castles = " + numCastles);
         }
         
         for (int i = 0; i < numCastles; i++) {
@@ -206,7 +270,7 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     public Action church() {
-    	if (me.turn == 1) {
+        if (me.turn == 1) {
             fillAllMines();
             getMineScores();
             identifyClusters();
@@ -243,7 +307,7 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     public Action pilgrim() {
-    	Robot base = null;
+        Robot base = null;
         for (int[] move : adjacentSpaces) {
             int testX = me.x + move[0];
             int testY = me.y + move[1];
@@ -374,18 +438,18 @@ public class MyRobot extends BCAbstractRobot {
             }
         }
         
-            if(fuel >= pilgrimLim * 2)
+        if(fuel >= pilgrimLim * 2)
+        {
+            if(moveAway())
             {
-                if(moveAway())
+                int[] mov = exploreLattice();
+                if(mov != null)
                 {
-                    int[] mov = exploreLattice();
-                    if(mov != null)
-                    {
-                        return move(mov[0], mov[1]);
-                    }
+                    return move(mov[0], mov[1]);
                 }
-                
             }
+            
+        }
         return null;
     }
     
@@ -406,34 +470,34 @@ public class MyRobot extends BCAbstractRobot {
         
         if(!arrived && fuel >= pilgrimLim * 2)
         {
-        	if (currentPath == null || currentPath.size() <= locInPath || visibleRobotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
-        	{
-        		currentPath = goToLattice();
-        	}
-
-        	if (currentPath == null || currentPath.size() <= locInPath || visibleRobotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
-        	{
-        		log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
-
-        		int[] mov = randomAdjSq();
-        		if(mov != null)
-        		{
-        			if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
-        			{
-        				arrived = true;
-        			}
-        			return move(mov[0], mov[1]);
-        		}
-        		return null;
-        	}
-
-        	int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
-        	locInPath += 1;
-        	if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(me.x + mov[0], me.y + mov[1]))
-        	{
-        		arrived = true;
-        	}
-        	return move(mov[0], mov[1]);
+            if (currentPath == null || currentPath.size() <= locInPath || visibleRobotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+            {
+                currentPath = goToLattice();
+            }
+            
+            if (currentPath == null || currentPath.size() <= locInPath || visibleRobotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+            {
+                log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
+                
+                int[] mov = randomAdjSq();
+                if(mov != null)
+                {
+                    if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
+                    {
+                        arrived = true;
+                    }
+                    return move(mov[0], mov[1]);
+                }
+                return null;
+            }
+            
+            int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+            locInPath += 1;
+            if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(me.x + mov[0], me.y + mov[1]))
+            {
+                arrived = true;
+            }
+            return move(mov[0], mov[1]);
         }
         return null;
     }
@@ -509,7 +573,7 @@ public class MyRobot extends BCAbstractRobot {
         int minDistance = this.mapYSize * this.mapYSize;
         int[] ans = null;
         for (int x = 0; x < this.mapXSize; x++) {
-        looping: for (int y = 0; y < this.mapYSize; y++) {
+        outer: for (int y = 0; y < this.mapYSize; y++) {
             if (this.karboniteMap[y][x]) {
                 int[] temp = new int[] { x, y };
                 for (int[] out : karbosInUse) {
@@ -517,13 +581,13 @@ public class MyRobot extends BCAbstractRobot {
                         if (visibleRobotMap[y][x] == 0) {
                             karbosInUse.remove(out);
                         } else {
-                            continue looping;
+                            continue outer;
                         }
                     }
                 }
                 if (visibleRobotMap[y][x] > 0) {
                     karbosInUse.add(temp);
-                    continue looping;
+                    continue outer;
                 }
                 int dx = x - me.x;
                 int dy = y - me.y;
@@ -541,7 +605,7 @@ public class MyRobot extends BCAbstractRobot {
         int minDistance = this.mapYSize * this.mapYSize;
         int[] ans = new int[] { 0, 0 };
         for (int x = 0; x < this.mapXSize; x++) {
-        looping: for (int y = 0; y < this.mapYSize; y++) {
+        outer: for (int y = 0; y < this.mapYSize; y++) {
             if (this.fuelMap[y][x]) {
                 int[] temp = new int[] { x, y };
                 for (int[] out : fuelsInUse) {
@@ -549,13 +613,13 @@ public class MyRobot extends BCAbstractRobot {
                         if (visibleRobotMap[y][x] == 0) {
                             fuelsInUse.remove(out);
                         } else {
-                            continue looping;
+                            continue outer;
                         }
                     }
                 }
                 if (visibleRobotMap[y][x] > 0) {
                     fuelsInUse.add(temp);
-                    continue looping;
+                    continue outer;
                 }
                 int dx = x - me.x;
                 int dy = y - me.y;
@@ -571,14 +635,14 @@ public class MyRobot extends BCAbstractRobot {
     
     public void setXorKey()
     {
-//        int[] parts = new int[4];
-//        parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
-//        parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
-//        parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
-//        parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
+        //        int[] parts = new int[4];
+        //        parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
+        //        parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
+        //        parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
+        //        parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
         
-//        xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
-    	xorKey = 34567843;
+        //        xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
+        xorKey = 34567843;
     }
     
     public void getEnemyCastleLocs()
@@ -597,7 +661,7 @@ public class MyRobot extends BCAbstractRobot {
             }
         }
     }
-
+    
     
     public Robot[] getEnemiesInRange() {
         Robot[] robots = getVisibleRobots();
@@ -844,7 +908,7 @@ public class MyRobot extends BCAbstractRobot {
                 + (tile1[1] - tile2[1]) * (tile1[1] - tile2[1]) <= rangeSquared);
     }
     
- // Finds distance squared between two robots
+    // Finds distance squared between two robots
     public double findDistance(Robot me, Robot opponent) {
         int xDistance = opponent.x - me.x;
         int yDistance = opponent.y - me.y;
@@ -866,19 +930,19 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     public double findDistance(int[] location) {
-		int xDistance = location[1] - me.x;
-		int yDistance = location[0] - me.y;
-		return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
-	}
-
-	//Finds distance squared between two pairs of coordinates
+        int xDistance = location[1] - me.x;
+        int yDistance = location[0] - me.y;
+        return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
+    }
+    
+    //Finds distance squared between two pairs of coordinates
     public double findDistance(int x1, int y1, int x2, int y2) {
         int xDistance = x1 - x2;
         int yDistance = y1 - y2;
         return Math.pow(xDistance, 2) + Math.pow(yDistance, 2);
     }
     
-  //checks if the robot is in attack range
+    //checks if the robot is in attack range
     public boolean canAttack(double distance) {
         return this.getMinAttackRangeRadius(this.me.unit) <= Math.sqrt(distance) && Math.sqrt(distance) <= this.getMaxAttackRangeRadius(this.me.unit) && this.fuel >= this.getAttackFuel(this.me.unit);
     }
@@ -888,12 +952,12 @@ public class MyRobot extends BCAbstractRobot {
         return this.getMinAttackRangeRadius(r.unit) <= Math.sqrt(distance) && Math.sqrt(distance) <= this.getMaxAttackRangeRadius(r.unit);
     }
     
-  //can this unit be built? do we have enough fuel and karbonite? is there room?
+    //can this unit be built? do we have enough fuel and karbonite? is there room?
     public boolean canBuild(int type) {
         return this.fuel >= SPECS.UNITS[type].CONSTRUCTION_FUEL && this.karbonite >= SPECS.UNITS[type].CONSTRUCTION_KARBONITE && this.checkAdjacentBuildAvailable()!=null;
     }
     
-  //checks if adjacent tiles are available. used for making units. checks tiles closer to the middle of the map first. //TODO build pilgrims on deposits, and other units not on deposits. if possible
+    //checks if adjacent tiles are available. used for making units. checks tiles closer to the middle of the map first. //TODO build pilgrims on deposits, and other units not on deposits. if possible
     public int[] checkAdjacentBuildAvailable() {
         int x = this.me.x;
         int y = this.me.y;
@@ -1244,7 +1308,7 @@ public class MyRobot extends BCAbstractRobot {
         if (visibleRobotMap[goalY][goalX] > 0) {
             occupied = true;
         }
-//        int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+        //        int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
         int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
         LinkedList<int[]> spots = new LinkedList<>();
         int[] spot = new int[] { me.x, me.y };
