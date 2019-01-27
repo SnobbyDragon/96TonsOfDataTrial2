@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class MyRobot extends BCAbstractRobot {
+public class ClumpCenter extends BCAbstractRobot {
     public boolean[][] passableMap;
     public int[][] visibleRobotMap;
     public boolean[][] karboniteMap;

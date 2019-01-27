@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class MyRobot extends BCAbstractRobot {
+public class PilgrimMine extends BCAbstractRobot {
 	public int turn;
 	public int[] castleLocation;
 	public Action turn() {

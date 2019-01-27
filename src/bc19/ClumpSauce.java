@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class MyRobot extends BCAbstractRobot {
+public class ClumpSauce extends BCAbstractRobot {
 	public int turn;
 	public ArrayList<ArrayList<int[]>> clumpList;
 	// int[] location is done by y then x
