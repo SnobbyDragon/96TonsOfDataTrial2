@@ -240,13 +240,7 @@ public class MyRobot extends BCAbstractRobot {
                 } else {
                     shouldBuild = (int) (Math.random() * (robots[0].size() + robots[1].size()));
                 }
-                if(turn>=900) {
-                    int[] build = checkAdjacentAvailableRandom();
-                    if(build!=null) {
-                        log("building crusader");
-                        return buildUnit(SPECS.CRUSADER,build[0],build[1]);
-                    }
-                }
+              
                 if (shouldBuild == 0) {
                     int[] build = checkAdjacentAvailableRandom();
                     if (build != null) {
@@ -268,6 +262,9 @@ public class MyRobot extends BCAbstractRobot {
                         //return buildUnit(4, build[0], build[1]);
                         for (int i = 0; i < castleIDs.length; i++) {
                             if (me.id == castleIDs[i]) {
+                            	if(turn>=900) {
+                                	return buildUnit(SPECS.CRUSADER,build[0],build[1]);
+                                }
                                 if (karbonite >= karboniteLevel) {
                                     return buildUnit(4, build[0], build[1]);
 
@@ -328,14 +325,7 @@ public class MyRobot extends BCAbstractRobot {
             return null;
         }
         
-        if(turn>=900) {
-            int[] build = checkAdjacentAvailableRandom();
-            if(build!=null) {
-                                        log("building crusader");
-
-                return buildUnit(SPECS.CRUSADER,build[0],build[1]);
-            }
-        }
+       
         // prophet lattice
         if (numPilgrims >= maxPilgrims) {
             if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6
@@ -355,7 +345,11 @@ public class MyRobot extends BCAbstractRobot {
                     int[] build = checkAdjacentAvailableRandom();
                     if (build != null) {
                         castleTalk(4);
-                        return buildUnit(4, build[0], build[1]);
+                        if(turn>=900) {
+                        	return buildUnit(SPECS.CRUSADER,build[0],build[1]);
+                        } else {
+                        	return buildUnit(4, build[0], build[1]);
+                        }
                     }
                 }
             }
