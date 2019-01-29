@@ -239,6 +239,12 @@ public class MyRobot extends BCAbstractRobot {
                 } else {
                     shouldBuild = (int) (Math.random() * (robots[0].size() + robots[1].size()));
                 }
+                if(turn>=900) {
+                    int[] build = checkAdjacentAvailableRandom();
+                    if(build!=null) {
+                        return buildUnit(SPECS.CRUSADER,build[0],build[1]);
+                    }
+                }
                 if (shouldBuild == 0) {
                     int[] build = checkAdjacentAvailableRandom();
                     if (build != null) {
@@ -319,7 +325,13 @@ public class MyRobot extends BCAbstractRobot {
                 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
             return null;
         }
-
+        
+        if(turn>=900) {
+            int[] build = checkAdjacentAvailableRandom();
+            if(build!=null) {
+                return buildUnit(SPECS.CRUSADER,build[0],build[1]);
+            }
+        }
         // prophet lattice
         if (numPilgrims >= maxPilgrims) {
             if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6
