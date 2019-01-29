@@ -242,6 +242,7 @@ public class MyRobot extends BCAbstractRobot {
                 if(turn>=900) {
                     int[] build = checkAdjacentAvailableRandom();
                     if(build!=null) {
+                        log("building crusader");
                         return buildUnit(SPECS.CRUSADER,build[0],build[1]);
                     }
                 }
@@ -329,6 +330,8 @@ public class MyRobot extends BCAbstractRobot {
         if(turn>=900) {
             int[] build = checkAdjacentAvailableRandom();
             if(build!=null) {
+                                        log("building crusader");
+
                 return buildUnit(SPECS.CRUSADER,build[0],build[1]);
             }
         }
