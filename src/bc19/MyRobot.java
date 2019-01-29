@@ -240,7 +240,13 @@ public class MyRobot extends BCAbstractRobot {
                 } else {
                     shouldBuild = (int) (Math.random() * (robots[0].size() + robots[1].size()));
                 }
-              
+                if(turn>=900) {
+                    int[] build = checkAdjacentAvailableRandom();
+                    if(build!=null) {
+                        log("building crusader");
+                        return buildUnit(SPECS.CRUSADER,build[0],build[1]);
+                    }
+                }
                 if (shouldBuild == 0) {
                     int[] build = checkAdjacentAvailableRandom();
                     if (build != null) {
@@ -262,9 +268,6 @@ public class MyRobot extends BCAbstractRobot {
                         //return buildUnit(4, build[0], build[1]);
                         for (int i = 0; i < castleIDs.length; i++) {
                             if (me.id == castleIDs[i]) {
-                            	if(turn>=900) {
-                                	return buildUnit(SPECS.CRUSADER,build[0],build[1]);
-                                }
                                 if (karbonite >= karboniteLevel) {
                                     return buildUnit(4, build[0], build[1]);
 
@@ -325,7 +328,14 @@ public class MyRobot extends BCAbstractRobot {
             return null;
         }
         
-       
+        if(turn>=900) {
+            int[] build = checkAdjacentAvailableRandom();
+            if(build!=null) {
+                                        log("building crusader");
+
+                return buildUnit(SPECS.CRUSADER,build[0],build[1]);
+            }
+        }
         // prophet lattice
         if (numPilgrims >= maxPilgrims) {
             if (fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6
@@ -345,11 +355,7 @@ public class MyRobot extends BCAbstractRobot {
                     int[] build = checkAdjacentAvailableRandom();
                     if (build != null) {
                         castleTalk(4);
-                        if(turn>=900) {
-                        	return buildUnit(SPECS.CRUSADER,build[0],build[1]);
-                        } else {
-                        	return buildUnit(4, build[0], build[1]);
-                        }
+                        return buildUnit(4, build[0], build[1]);
                     }
                 }
             }
@@ -460,6 +466,36 @@ public class MyRobot extends BCAbstractRobot {
     }
 
     public Action crusader() {
+        Robot badGuy = this.findPrimaryEnemyTypeDistance(this.findBadGuys());
+        if (badGuy != null) {
+            // attack
+            return attack(badGuy.x - this.me.x, badGuy.y - this.me.y);
+        }
+        if (!inPosition) {
+            if (path == null || path.size() <= pathIndex
+                    || visibleRobotMap[path.get(pathIndex)[1]][path.get(pathIndex)[0]] > 0) {
+                path = this.lattice();
+            }
+
+            if (path == null || path.size() <= pathIndex
+                    || visibleRobotMap[path.get(pathIndex)[1]][path.get(pathIndex)[0]] > 0) {
+                int[] mov = checkAdjacentAvailableRandom();
+                if (mov != null) {
+                    if ((me.x + mov[0] + me.y + mov[1]) % 2 == 0) {
+                        inPosition = true;
+                    }
+                    return move(mov[0], mov[1]);
+                }
+                return null;
+            }
+
+            int[] mov = new int[] { path.get(pathIndex)[0] - me.x, path.get(pathIndex)[1] - me.y };
+            pathIndex += 1;
+            if ((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !adjacentToHome(me.x + mov[0], me.y + mov[1])) {
+                inPosition = true;
+            }
+            return move(mov[0], mov[1]);
+        }
         return null;
     }
 
@@ -515,7 +551,31 @@ public class MyRobot extends BCAbstractRobot {
         if (atk != null) {
             return atk;
         }
+        if (!inPosition) {
+            if (path == null || path.size() <= pathIndex
+                    || visibleRobotMap[path.get(pathIndex)[1]][path.get(pathIndex)[0]] > 0) {
+                path = this.lattice();
+            }
 
+            if (path == null || path.size() <= pathIndex
+                    || visibleRobotMap[path.get(pathIndex)[1]][path.get(pathIndex)[0]] > 0) {
+                int[] mov = checkAdjacentAvailableRandom();
+                if (mov != null) {
+                    if ((me.x + mov[0] + me.y + mov[1]) % 2 == 0) {
+                        inPosition = true;
+                    }
+                    return move(mov[0], mov[1]);
+                }
+                return null;
+            }
+
+            int[] mov = new int[] { path.get(pathIndex)[0] - me.x, path.get(pathIndex)[1] - me.y };
+            pathIndex += 1;
+            if ((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !adjacentToHome(me.x + mov[0], me.y + mov[1])) {
+                inPosition = true;
+            }
+            return move(mov[0], mov[1]);
+        }
         return null;
     }
 
