@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
-
+	public int turn;
     public int mapYSize, mapXSize; // size of the map, length y and length x
     public boolean horizontalReflection;
     public int[][] visibleRobotMap;
@@ -57,6 +57,7 @@ public class MyRobot extends BCAbstractRobot {
     public int[][] allDeposits;
 
     public Action turn() {
+    	turn++;
         if (me.turn == 1) {
             this.passableMap = this.getPassableMap();
             this.mapYSize = this.passableMap.length;
